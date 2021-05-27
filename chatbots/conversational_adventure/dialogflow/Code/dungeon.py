@@ -1,6 +1,7 @@
 from player import Player
 from character import Character
 from item import Item
+from action import Action
 
 class Dungeon:
     def __init__(self):
@@ -34,6 +35,12 @@ class Dungeon:
         for player in self.players:            
             sen += "\t\t\t\t\t\t- Name: " + player.name + "\n\t\t\t\t\t\t- Health: " + str(player.health) + " HP\n"
         return sen
+    
+    def players_list(self):
+        sen = ""
+        for player in self.players:            
+            sen += "\t\t- " + player.name + "\n"
+        return sen
 
     # CHARACTER
     def add_character(self, character):
@@ -51,6 +58,12 @@ class Dungeon:
             sen += "\t\t\t\t\t\t- Name: " + character.name + "\n\t\t\t\t\t\t- Greeting: " + character.greetings + "\n\t\t\t\t\t\t- Information:\n"
             for inf in character.info:
                 sen+= "\t"*8 + "- " + inf + "\n"
+        return sen
+    
+    def characters_list(self):
+        sen = ""
+        for character in self.characters:            
+            sen += "\t\t- " + character.name + "\n"
         return sen
 
     # ITEM
@@ -78,6 +91,12 @@ class Dungeon:
                 if (key == "open"):
                     sen += "\t"*12 + "- Items needed to open: " + ', '.join(value.item_need) + "\n"
                     sen += "\t"*12 + "- Items inside: " + ', '.join(value.item_in) + "\n"  
+        return sen
+
+    def items_list(self):
+        sen = ""
+        for item in self.items:            
+            sen += "\t\t- " + item.name + "\n"
         return sen
     
     # DUNGEON
@@ -113,4 +132,33 @@ class Dungeon:
         self.rooms = 0
         self.characters = []
         self.items = []
+    
+    def aux(self):
+        player1 = Player("Marcus")
+        player1.health = 100
+        player2 = Player("Mary")
+        player2.health = 115
+        self.players.append(player1)
+        self.players.append(player2)
+        #--------------------------------------------------------------------------------------
+        self.rooms = 20
+        #--------------------------------------------------------------------------------------
+        item1 = Item("potion")
+        action1 = Action("You can take the item")
+        action2 = Action("You can consume the item", "It will kill the player", False, [], [])
+        item1.add_action("take", action1)
+        item1.add_action("consume", action2)
+        item2 = Item("chest")
+        action1 = Action("You can open the item", "", True, ["key"], ["potion", "book"])
+        item2.add_action("open", action1)
+        self.items.append(item1)
+        self.items.append(item2)
+        #--------------------------------------------------------------------------------------
+        character1 = Character("Magnus the red")
+        character1.greetings = "Hello traveller"
+        character1.info.append("He will give you a key")
+        character1.info.append("He will give you a book")
+        self.characters.append(character1)
+
+         
         
