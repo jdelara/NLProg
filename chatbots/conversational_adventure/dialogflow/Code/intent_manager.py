@@ -84,8 +84,7 @@ def player_name(req, dngn, contexts):
         player = Player(name)
         dngn.add_player(player)
         return {
-                "fulfillmentText":"So " + name + ". How much HP (health points) will " +
-                name + " have?", 
+                "fulfillmentText":"How much HP (health points) will " + name + " have?", 
                 "outputContexts": [
                     {
                         "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/hp-player",
@@ -146,6 +145,9 @@ def item_name(req, dngn, contexts):
                 "outputContexts": [
                     {
                         "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/action-item",
+                        "parameters": {
+                            "name": name
+                            },
                         "lifespanCount": 1,
                     }
                 ],         
@@ -164,7 +166,8 @@ def item_name(req, dngn, contexts):
                 ],         
             }
 def item_exists_yes(req, dngn, contexts):
-    name = req["queryResult"]["outputContexts"][0]["parameters"]["item"].lower()
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"]) if elem["name"].endswith("exists-item"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["item"].lower()
     name += " "+dngn.get_item_position(name)
     item = Item(name)
     dngn.add_item(item)
@@ -174,28 +177,40 @@ def item_exists_yes(req, dngn, contexts):
                 "outputContexts": [
                     {
                         "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/action-item",
+                        "parameters": {
+                            "name": name
+                            },
                         "lifespanCount": 1,
                     }
                 ],         
             }
 
 def item_exists_no(req, dngn, contexts):
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"]) if elem["name"].endswith("exists-item"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["item"].lower()
     return {
                 "fulfillmentText":"Ok. Select another name for the item:", 
                 "outputContexts": [
                     {
                         "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/item-configuration",
+                        "parameters": {
+                            "name": name
+                            },
                         "lifespanCount": 1,
                     }
                 ],         
             }
 
-def item_action(req, dngn, contexts): 
+def item_action(req, dngn, contexts):
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"]) if elem["name"].endswith("action-item"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"].lower()  
+    print(name) 
+    print("\n"*4)  
     actions = req["queryResult"]["parameters"]["action"]
-    return eval("item_"+actions[0].lower()+"(dngn, actions)")
+    return eval("item_"+actions[0].lower()+"(dngn, actions, name)")
 
-def item_take(dngn, actions, msg = ""):   
-    item = dngn.get_item()
+def item_take(dngn, actions, name, msg = ""):   
+    item = dngn.get_item(name)
     action = Action("You can take the " + item.name)
     item.add_action(actions[0].lower(),action)
     return {
@@ -204,15 +219,16 @@ def item_take(dngn, actions, msg = ""):
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/win-condition",
                     "parameters": {
-                        "action": actions
+                        "action": actions,
+                        "name": name
                         },
                     "lifespanCount": 1,
                 }
             ],         
         }
 
-def item_consume(dngn, actions, msg = ""):
-    item = dngn.get_item()
+def item_consume(dngn, actions, name, msg = ""):
+    item = dngn.get_item(name)
     action = Action("You can consume the " + item.name)
     item.add_action(actions[0].lower(),action)
     return {
@@ -221,7 +237,8 @@ def item_consume(dngn, actions, msg = ""):
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/item-consumption",
                     "parameters": {
-                        "action": actions
+                        "action": actions,
+                        "name": name
                         },
                     "lifespanCount": 1,
                 }
@@ -229,9 +246,10 @@ def item_consume(dngn, actions, msg = ""):
         }
     
 def item_consumption(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith(contexts[0])]
-    actions = req["queryResult"]["outputContexts"][index[0]]["parameters"]["action"]
-    item = dngn.get_item()
+    idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("item-consumption"))
+    actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
+    item = dngn.get_item(name)
     item.actions[actions[0].lower()].effect = req["queryResult"]["queryText"]
     return {
             "fulfillmentText":"Will consuming the " + item.name + " be a winning condition?", 
@@ -239,7 +257,8 @@ def item_consumption(req, dngn, contexts):
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/win-condition",
                     "parameters": {
-                        "action": actions
+                        "action": actions,
+                        "name": name
                         },
                     "lifespanCount": 1,
                 }
@@ -247,8 +266,8 @@ def item_consumption(req, dngn, contexts):
         }
     
 
-def item_open(dngn, actions, msg = ""):
-    item = dngn.get_item()
+def item_open(dngn, actions,name, msg = ""):
+    item = dngn.get_item(name)
     action = Action("You can open the " + item.name)
     item.add_action(actions[0].lower(),action)
     return {
@@ -257,16 +276,18 @@ def item_open(dngn, actions, msg = ""):
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/open-need",
                     "parameters": {
-                        "action": actions
+                        "action": actions,
+                        "name": name
                         },
                     "lifespanCount": 1,
                 }
             ],         
         }
 def open_need(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith(contexts[0])]
-    actions = req["queryResult"]["outputContexts"][index[0]]["parameters"]["action"]
-    item = dngn.get_item()
+    idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("open-need"))
+    actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
+    item = dngn.get_item(name)
     item.actions[actions[0].lower()].set_item_need(req["queryResult"]["parameters"]["item"])
     return {
             "fulfillmentText":"What will the " + item.name + " have inside?", 
@@ -274,7 +295,8 @@ def open_need(req, dngn, contexts):
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/open-in",
                     "parameters": {
-                        "action": actions
+                        "action": actions,
+                        "name": name
                         },
                     "lifespanCount": 1,
                 }
@@ -282,9 +304,10 @@ def open_need(req, dngn, contexts):
         }
 
 def open_in(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith(contexts[0])]
-    actions = req["queryResult"]["outputContexts"][index[0]]["parameters"]["action"]
-    item = dngn.get_item()
+    idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("open-in"))
+    actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
+    item = dngn.get_item(name)
     item.actions[actions[0].lower()].set_item_in(req["queryResult"]["parameters"]["item"])
     return {
             "fulfillmentText":"Will opening the " + item.name + " be a winning condition?", 
@@ -292,15 +315,16 @@ def open_in(req, dngn, contexts):
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/win-condition",
                     "parameters": {
-                        "action": actions
+                        "action": actions,
+                        "name": name
                         },
                     "lifespanCount": 1,
                 }
             ],         
         }
 
-def item_read(dngn, actions, msg = ""):
-    item = dngn.get_item()
+def item_read(dngn, actions, name, msg = ""):
+    item = dngn.get_item(name)
     action = Action("You can read the " + item.name)
     item.add_action(actions[0].lower(),action)
     return {
@@ -309,7 +333,8 @@ def item_read(dngn, actions, msg = ""):
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/read-description",
                     "parameters": {
-                        "action": actions
+                        "action": actions,
+                        "name": name
                         },
                     "lifespanCount": 1,
                 }
@@ -317,9 +342,10 @@ def item_read(dngn, actions, msg = ""):
         }
 
 def read_description(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith(contexts[0])]
-    actions = req["queryResult"]["outputContexts"][index[0]]["parameters"]["action"]
-    item = dngn.get_item()
+    idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("read-description"))
+    actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
+    item = dngn.get_item(name)
     item.actions[actions[0].lower()].desc = req["queryResult"]["queryText"]
     return {
             "fulfillmentText":"Will reading the " + item.name + " be a winning condition?", 
@@ -327,7 +353,8 @@ def read_description(req, dngn, contexts):
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/win-condition",
                     "parameters": {
-                        "action": actions
+                        "action": actions,
+                        "name": name
                         },
                     "lifespanCount": 1,
                 }
@@ -336,11 +363,14 @@ def read_description(req, dngn, contexts):
 
 
 def win_condition_yes(req, dngn, contexts):
-    actions = req["queryResult"]["outputContexts"][0]["parameters"]["action"]
-    item = dngn.get_item()
+    idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("win-condition"))
+    actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
+    item = dngn.get_item(name)
     item.actions[actions[0].lower()].win = True
     if(actions[1:]):
-        return eval("item_"+actions[1].lower()+"(dngn, actions[1:], 'To " + actions[0].lower() + " the " + item.name + " will be a winning condition')")
+        return eval("item_"+actions[1].lower()+"(dngn, actions[1:], name, 'To " + actions[0].lower() \
+            + " the " + item.name + " will be a winning condition')")
     else:
         return {
                 "fulfillmentText":"Perfect! The " + item.name + " has been set up. What else do you want to configure?", 
@@ -353,11 +383,14 @@ def win_condition_yes(req, dngn, contexts):
             }
 
 def win_condition_no(req, dngn, contexts):
-    actions = req["queryResult"]["outputContexts"][0]["parameters"]["action"]
-    item = dngn.get_item()
+    idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("win-condition"))
+    actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
+    item = dngn.get_item(name)
     item.actions[actions[0].lower()].win = False
     if(actions[1:]):
-        return eval("item_"+actions[1].lower()+"(dngn, actions[1:], 'To " + actions[0].lower() + " the " + item.name + " will NOT be a winning condition')")
+        return eval("item_"+actions[1].lower()+"(dngn, actions[1:], name, 'To " + actions[0].lower() \
+             + " the " + item.name + " will NOT be a winning condition')")
     else:
         return {
                 "fulfillmentText":"Perfect! The " + item.name + " has been set up. What else do you want to configure?", 
@@ -530,14 +563,35 @@ def modify_player_selection(req, dngn, contexts):
         }
 
 def modify_player_stat(req, dngn, contexts): 
-    name = req["queryResult"]["outputContexts"][0]["parameters"]["player"]  
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-player-stat"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["player"].lower().capitalize()  
     stat = req["queryResult"]["parameters"]["stat"].lower()
-    print(stat)
-    print("\n\n\n")
     if (stat == "name"):
-        return modify_p_name(req, dngn, contexts)
+        return {
+            "fulfillmentText":"Select a new name for " + name + ".\n", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-name",
+                        "parameters": {
+                            "player": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
     elif (stat == "hp" or stat == "health"):
-        return modify_p_health(req, dngn, contexts)
+        return {
+            "fulfillmentText":"How much HP (health points) will " + name + " have?\n", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-health",
+                        "parameters": {
+                            "player": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
     else:
         return {
             "fulfillmentText":"Sorry, could you repeat that?", 
@@ -549,59 +603,45 @@ def modify_player_stat(req, dngn, contexts):
                         },
                         "lifespanCount": 1,
                     }
-                ],   
-
+                ],
         }
-
-def modify_p_name(req, dngn, contexts):
-    name = req["queryResult"]["outputContexts"][0]["parameters"]["player"]    
-    return {
-        "fulfillmentText":"Select a new name for " + name + ".\n", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-name",
-                    "parameters": {
-                        "player": name
-                        },
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
-def modify_player_name(req, dngn, contexts):
-    old_name = req["queryResult"]["outputContexts"][0]["parameters"]["player"].lower().capitalize()  
+    
+def modify_player_name(req, dngn, contexts):    
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-player-name"))
+    old_name = req["queryResult"]["outputContexts"][idx]["parameters"]["player"].lower().capitalize()
     new_name = req["queryResult"]["parameters"]["playerName"].lower().capitalize()
-    index = [idx for idx, player in enumerate(dngn.players) if old_name==player.name]
-    dngn.players[index[0]].name = new_name
-    return {
-        "fulfillmentText":"Name " + old_name + " is now " + new_name + ".\nWhat do you want to set up next?", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
-
-def modify_p_health(req, dngn, contexts):
-    print("EENTRANDO EN P HEALTH")
-    name = req["queryResult"]["outputContexts"][0]["parameters"]["player"]   
-    return {
-        "fulfillmentText":"How much HP (health points) will " + name + " have?.\n", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-health",
-                    "parameters": {
-                        "player": name
+    if not dngn.check_player_name(new_name):            
+        idx = next(idx for idx, player in enumerate(dngn.players) if old_name==player.name)
+        dngn.players[idx].name = new_name
+        return {
+            "fulfillmentText":"Name " + old_name + " is now " + new_name + ".\nWhat do you want to set up next?", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+    else:
+        return {
+                "fulfillmentText":"Name '" + new_name + "' is already taken by another player. Please, choose another name.", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-name",
+                        "parameters": {
+                            "player": old_name
                         },
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
+                        "lifespanCount": 1,
+                    }
+                ],         
+            }
+
 def modify_player_health(req, dngn, contexts):
-    name = req["queryResult"]["outputContexts"][0]["parameters"]["player"].lower().capitalize()  
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-player-health"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["player"].lower().capitalize()
     health = req["queryResult"]["parameters"]["health"]
-    index = [idx for idx, player in enumerate(dngn.players) if name==player.name]
-    dngn.players[index[0]].health = health
+    idx = next(idx for idx, player in enumerate(dngn.players) if name==player.name)
+    dngn.players[idx].health = health
     return {
         "fulfillmentText":name + " health points set to " + str(health) + ".\nWhat do you want to set up next?", 
             "outputContexts": [
@@ -638,13 +678,13 @@ def change_character(req, dngn, contexts):
                 ],           
             }
 
-def modify_character_selection(req, dngn, contexts):  
+def modify_character_selection(req, dngn, contexts):
     name = req["queryResult"]["parameters"]["characterName"].lower().capitalize()
     index = [idx for idx, character in enumerate(dngn.characters) if name==character.name]
     if (index):
         return {
-                "fulfillmentText":"What do you want to modify from " + name + ", the name, the way he/she will greet the player or the info \
-                he/she will provide?\n", 
+                "fulfillmentText":"What do you want to modify from " + name + ", the name, the way he/she will greet the player or the info " + \
+                "he/she will provide?\n", 
                 "outputContexts": [
                     {
                         "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-character-stat",
@@ -667,17 +707,50 @@ def modify_character_selection(req, dngn, contexts):
             }
 
 def modify_character_stat(req, dngn, contexts):  
-    name = req["queryResult"]["outputContexts"][0]["parameters"]["character"] 
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-character-stat"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["character"] 
     stat = req["queryResult"]["parameters"]["stat"].lower()
     if (stat == "name"):
-        print("entro en name")
-        return modify_c_name(req, dngn, contexts)
+        return {
+            "fulfillmentText":"Select a new name for " + name + ".", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-character-name",
+                        "parameters": {
+                            "character": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
     elif (stat == "info" or stat == "information"):
-        print("entro en info")
-        return modify_c_info(req, dngn, contexts)
+        idx = next(idx for idx, character in enumerate(dngn.characters) if name==character.name)
+        dngn.characters[idx].info = []    
+        return {
+            "fulfillmentText":"What will " + name + " tell you?\n", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-character-info",
+                        "parameters": {
+                            "character": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
     elif (stat == "greetings" or stat == "greet"):
-        print("entro en greets")
-        return modify_c_greet(req, dngn, contexts)
+        return {
+            "fulfillmentText":"How will " + name + " greet the player?\n", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-character-greet",
+                        "parameters": {
+                            "character": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
     else:
         return {
             "fulfillmentText":"Sorry, could you repeat that?", 
@@ -690,94 +763,58 @@ def modify_character_stat(req, dngn, contexts):
                         "lifespanCount": 1,
                     }
                 ],   
-
-        }
-
-def modify_c_name(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("modify-character-stat")]
-    name = req["queryResult"]["outputContexts"][index[0]]["parameters"]["character"]    
-    return {
-        "fulfillmentText":"Select a new name for " + name + ".", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-character-name",
-                    "parameters": {
-                        "character": name
-                        },
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
+        }    
 
 def modify_character_name(req, dngn, contexts):
-    old_name = req["queryResult"]["outputContexts"][0]["parameters"]["character"].lower().capitalize()  
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-character-name"))
+    old_name = req["queryResult"]["outputContexts"][idx]["parameters"]["character"].lower().capitalize()
     new_name = req["queryResult"]["parameters"]["characterName"].lower().capitalize()
-    index = [idx for idx, character in enumerate(dngn.characters) if old_name==character.name]
-    dngn.characters[index[0]].name = new_name
+    if not dngn.check_character_name(new_name):            
+        idx = next(idx for idx, character in enumerate(dngn.characters) if old_name==character.name)
+        dngn.characters[idx].name = new_name
+        return {
+            "fulfillmentText":"Name " + old_name + " is now " + new_name + ".\nWhat do you want to set up next?", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+    else:
+        return {
+                "fulfillmentText":"Name '" + new_name + "' is already taken by another character. Please, choose another name.", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-name",
+                        "parameters": {
+                            "player": old_name
+                        },
+                        "lifespanCount": 1,
+                    }
+                ],         
+            }
+        
+def modify_character_greet(req, dngn, contexts):    
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-character-greet"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["character"]  
+    idx = next(idx for idx, character in enumerate(dngn.characters) if name==character.name)
+    dngn.characters[idx].greetings = req["queryResult"]["queryText"]
     return {
-        "fulfillmentText":"Name " + old_name + " is now " + new_name + ".\nWhat do you want to set up next?", 
+        "fulfillmentText":"Greeting modified. What else do you want to set up?\n", 
             "outputContexts": [
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
                     "lifespanCount": 1,
                 }
             ],           
-        }
-
-def modify_c_greet(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("modify-character-stat")]
-    name = req["queryResult"]["outputContexts"][index[0]]["parameters"]["character"]   
-    return {
-        "fulfillmentText":"How will " + name + " greet the player?.\n", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-character-greet",
-                    "parameters": {
-                        "character": name
-                        },
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
-
-def modify_character_greet(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("modify-character-greet")]
-    name = req["queryResult"]["outputContexts"][index[0]]["parameters"]["character"]  
-    index = [idx for idx, character in enumerate(dngn.characters) if name==character.name]
-    dngn.characters[index[0]].greetings = req["queryResult"]["queryText"]
-    return {
-        "fulfillmentText":"Greeting modified. What else do you want to set up?.\n", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
-
-def modify_c_info(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("modify-character-stat")]
-    name = req["queryResult"]["outputContexts"][index[0]]["parameters"]["character"]
-    index = [idx for idx, character in enumerate(dngn.characters) if name==character.name]
-    dngn.characters[index[0]].info = []    
-    return {
-        "fulfillmentText":"What will " + name + " tell you?.\n", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-character-info",
-                    "parameters": {
-                        "character": name
-                        },
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
+        }    
 
 def modify_character_info(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("modify-character-info")]
-    name = req["queryResult"]["outputContexts"][index[0]]["parameters"]["character"]
-    index = [idx for idx, character in enumerate(dngn.characters) if name==character.name]
-    dngn.characters[index[0]].info.append(req["queryResult"]["queryText"])
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-character-info"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["character"]  
+    idx = next(idx for idx, character in enumerate(dngn.characters) if name==character.name)
+    dngn.characters[idx].info.append(req["queryResult"]["queryText"])
     return {
             "fulfillmentText":"Anything else?", 
             "outputContexts": [
@@ -792,8 +829,8 @@ def modify_character_info(req, dngn, contexts):
         }  
 
 def modify_inf_character_else_yes(req, dngn, contexts):
-    index = [idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("modify-inf-character-else")]
-    name = req["queryResult"]["outputContexts"][index[0]]["parameters"]["character"]
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-in-character-else"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["character"]
     return {
             "fulfillmentText":"Ok, what else will " + name + " tell you?", 
             "outputContexts": [
@@ -816,6 +853,131 @@ def modify_inf_character_else_no(req, dngn, contexts):
                     "lifespanCount": 1,
                 }
             ],           
+        }
+
+#################################################
+#-------------------- Item  --------------------#
+#################################################
+
+def change_item(req, dngn, contexts):  
+    if(dngn.items):
+        return {
+                "fulfillmentText":"Which item do you want to modify?\n" + dngn.items_list() , 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-item-selection",
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+    else:
+        return {
+                "fulfillmentText":"The dungeon has no characters yet. What do you want to set up?", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+    
+def modify_item_selection(req, dngn, contexts):      
+    name = req["queryResult"]["parameters"]["item"].lower()
+    index = [idx for idx, item in enumerate(dngn.items) if name==item.name]
+    if (index):
+        return {
+                "fulfillmentText":"What do you want to modify from " + name + ", the name or the actions?\n", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-item-stat",
+                        "parameters": {
+                            "item": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+    else:
+        return {
+                "fulfillmentText":"Name '" + name + "' does not exist. Please, select one from the list.\n" + dngn.characters_list(), 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-item-selection",
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+
+def modify_item_stat(req, dngn, contexts):  
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-item-stat"))
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["item"] 
+    stat = req["queryResult"]["parameters"]["stat"].lower()
+    if (stat == "name"):
+        return {
+            "fulfillmentText":"Select a new name for the '" + name + "'.", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-item-name",
+                        "parameters": {
+                            "item": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+    elif (stat == "action" or stat == "actions"):
+        item = dngn.get_item(name)
+        item.actions = {}
+        return {
+            "fulfillmentText":"You are about to reset the actions for the " + name + ". List of actions available:\n" \
+                "\t\t - Take\n\t\t - Consume\n\t\t - Open\n\t\t - Read\nPlease, select one or more between the options given",  
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/action-item",
+                        "parameters": {
+                            "name": name
+                        },
+                        "lifespanCount": 1,
+                    }
+                ], 
+        }
+    else:
+        return {
+            "fulfillmentText":"Sorry, could you repeat that?", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-item-stat",
+                        "parameters": {
+                            "item": name
+                        },
+                        "lifespanCount": 1,
+                    }
+                ], 
+        }
+    
+
+def modify_item_name(req, dngn, contexts):
+    idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-item-name"))
+    old_name = req["queryResult"]["outputContexts"][idx]["parameters"]["item"].lower()
+    new_name = req["queryResult"]["parameters"]["newItem"].lower()
+    print(old_name)
+    print(new_name)
+    print("\n\n")
+    idx = next(idx for idx, item in enumerate(dngn.items) if old_name==item.name)
+    if dngn.check_item_name(new_name):
+        new_name += " "+dngn.get_item_position(new_name)
+    dngn.items[idx].name = new_name    
+    return {
+            "fulfillmentText":"Item renamed to " + new_name + ". What else do you want to set up?", 
+            "outputContexts": [
+                {
+                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                    "parameters": {
+                        "player": old_name
+                    },
+                    "lifespanCount": 1,
+                }
+            ],         
         }
 
 

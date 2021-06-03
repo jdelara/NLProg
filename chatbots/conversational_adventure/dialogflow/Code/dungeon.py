@@ -70,8 +70,8 @@ class Dungeon:
     def add_item(self, item):
         self.items.append(item)
     
-    def get_item(self):
-        return self.items[-1]
+    def get_item(self, name):
+        return next(item for item in self.items if item.name == name)
 
     def check_item_name(self, name):
         return any(item.name == name for item in self.items)
