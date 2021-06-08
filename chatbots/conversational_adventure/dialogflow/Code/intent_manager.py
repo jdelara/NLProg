@@ -38,7 +38,7 @@ ROOM
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 def new_room_select_number(req, dngn, contexts):
-    rooms = int(req["queryResult"]["parameters"]["number"][0])
+    rooms = int(req["queryResult"]["parameters"]["number"])
     dngn.set_number_of_rooms(rooms)
     return {
             "fulfillmentText":"So " + str(rooms) + " rooms. What else do you want to set up?",
@@ -204,8 +204,6 @@ def item_exists_no(req, dngn, contexts):
 def item_action(req, dngn, contexts):
     idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"]) if elem["name"].endswith("action-item"))
     name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"].lower()  
-    print(name) 
-    print("\n"*4)  
     actions = req["queryResult"]["parameters"]["action"]
     return eval("item_"+actions[0].lower()+"(dngn, actions, name)")
 
@@ -283,7 +281,7 @@ def item_open(dngn, actions,name, msg = ""):
                 }
             ],         
         }
-def open_need(req, dngn, contexts):
+def item_open_need(req, dngn, contexts):
     idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("open-need"))
     actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
     name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
@@ -303,7 +301,7 @@ def open_need(req, dngn, contexts):
             ],         
         }
 
-def open_in(req, dngn, contexts):
+def item_open_in(req, dngn, contexts):
     idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("open-in"))
     actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
     name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
@@ -341,7 +339,7 @@ def item_read(dngn, actions, name, msg = ""):
             ],         
         }
 
-def read_description(req, dngn, contexts):
+def item_read_description(req, dngn, contexts):
     idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("read-description"))
     actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
     name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
@@ -549,18 +547,32 @@ def change_player(req, dngn, contexts):
 
 def modify_player_selection(req, dngn, contexts):  
     name = req["queryResult"]["parameters"]["playerName"].lower().capitalize()
-    return {
-            "fulfillmentText":"What do you want to modify from " + name + ", the name or the health points?\n", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-stat",
-                    "parameters": {
-                        "player": name
-                        },
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
+    if dngn.check_player_name(name):
+        return {
+                "fulfillmentText":"What do you want to modify from " + name + ", the name or the health points?\n", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-stat",
+                        "parameters": {
+                            "player": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+    else:
+        return {
+                "fulfillmentText":"There is no player called '" + name + "'. Please, select one from the list\n" + dngn.players_list(), 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-player-stat",
+                        "parameters": {
+                            "player": name
+                            },
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
 
 def modify_player_stat(req, dngn, contexts): 
     idx = next(idx for idx, elem in enumerate(req["queryResult"]["outputContexts"])if elem["name"].endswith("modify-player-stat"))
@@ -899,7 +911,7 @@ def modify_item_selection(req, dngn, contexts):
             }
     else:
         return {
-                "fulfillmentText":"Name '" + name + "' does not exist. Please, select one from the list.\n" + dngn.characters_list(), 
+                "fulfillmentText":"Name '" + name + "' does not exist. Please, select one from the list.\n" + dngn.items_list(), 
                 "outputContexts": [
                     {
                         "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/modify-item-selection",
@@ -1011,17 +1023,28 @@ def delete_item(req, dngn, contexts):
 
 def delete_item_selection(req, dngn, contexts):
     name = req["queryResult"]["parameters"]["item"]
-    index = [idx for idx, item in enumerate(dngn.items) if item.name == name]
-    dngn.items.pop(index[0])
-    return {
-        "fulfillmentText": "The item '" + name + "' has been deleted successfully. What do you want to set up next?",
-        "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
-                    "lifespanCount": 1,
+    try:
+        idx = next(idx for idx, item in enumerate(dngn.items) if item.name == name)
+        dngn.items.pop(idx)
+        return {
+            "fulfillmentText": "The item '" + name + "' has been deleted successfully. What do you want to set up next?",
+            "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],
+            }
+    except:
+        return {
+                "fulfillmentText": "There is no item called '" + name + "'. Please, choose one from the list.\n" + dngn.items_list(),
+                "outputContexts": [
+                        {
+                            "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/delete-player-selection",
+                            "lifespanCount": 1,
+                        }
+                    ],
                 }
-            ],
-        }
     
 
 def delete_character(req, dngn, contexts):
@@ -1048,17 +1071,28 @@ def delete_character(req, dngn, contexts):
 
 def delete_character_selection(req, dngn, contexts):
     name = req["queryResult"]["parameters"]["characterName"].lower().capitalize()
-    index = [idx for idx, character in enumerate(dngn.characters) if name==character.name]
-    dngn.characters.pop(index[0])
-    return {
-        "fulfillmentText": "The character '" + name + "' has been deleted successfully. What do you want to set up next?",
-        "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
-                    "lifespanCount": 1,
+    try:
+        idx = next(idx for idx, character in enumerate(dngn.characters) if name==character.name)
+        dngn.characters.pop(idx)
+        return {
+            "fulfillmentText": "The character '" + name + "' has been deleted successfully. What do you want to set up next?",
+            "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],
+            }
+    except:
+        return {
+                "fulfillmentText": "There is no character called '" + name + "'. Please, repeat the name.\n" + dngn.characters_list(),
+                "outputContexts": [
+                        {
+                            "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/delete-player-selection",
+                            "lifespanCount": 1,
+                        }
+                    ],
                 }
-            ],
-        }
     
 def delete_player(req, dngn, contexts):
     if(dngn.players):
@@ -1084,18 +1118,28 @@ def delete_player(req, dngn, contexts):
 
 def delete_player_selection(req, dngn, contexts):
     name = req["queryResult"]["parameters"]["playerName"].lower().capitalize()
-    index = [idx for idx, player in enumerate(dngn.players) if name==player.name]
-    dngn.players.pop(index[0])
-    return {
-        "fulfillmentText": "The player '" + name + "' has been deleted successfully. What do you want to set up next?",
-        "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
-                    "lifespanCount": 1,
-                }
-            ],
-        }
-
+    try:
+        idx = next(idx for idx, player in enumerate(dngn.players) if name==player.name)
+        dngn.players.pop(idx)
+        return {
+            "fulfillmentText": "The player '" + name + "' has been deleted successfully. What do you want to set up next?",
+            "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],
+            }
+    except:
+        return {
+            "fulfillmentText": "There is no player called '" + name + "'. Please, repeat the name.\n" + dngn.players_list(),
+            "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/delete-player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],
+            }
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
