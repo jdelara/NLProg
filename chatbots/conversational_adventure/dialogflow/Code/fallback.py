@@ -31,11 +31,6 @@ def getFallback(req, context):
                 }                
     else:
         return {
-                    "fulfillmentText":"Sorry, Could you repeat that again?",
-                    "outputContexts": [
-                        {
-                            "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/" + context,
-                            "lifespanCount": 1,
-                        }
-                    ],
+                    "fulfillmentText":"Default Fallback",
+                    
                 }
