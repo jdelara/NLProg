@@ -3,6 +3,7 @@ class Item:
         self.name = name
         self.actions = {}
         self.open = False
+        self.inside = None
     
     def add_action(self, name, action):
         self.actions[name] = action
@@ -13,12 +14,15 @@ class Item:
     def describe_item_in(self):        
         sen = ""
         size = len(self.actions["open"].item_in)
-        sen += "Inside the " + self.name + " you can find "
-        for idx, i_in in enumerate(self.actions["open"].item_in):
-            sen += "a " + i_in.name + "." if size == 1 else ""
-            sen += "a " + i_in.name + ", " if idx < size-1 and idx != size-2 else ""
-            sen += "a " + i_in.name + " " if idx == size-2 else ""                    
-            sen += "and a " + i_in.name + "." if size > 1 and idx == size-1 else "" 
+        if size > 0:
+            sen += "Inside the " + self.name + " you can find "
+            for idx, i_in in enumerate(self.actions["open"].item_in):
+                sen += "a " + i_in.name + "." if size == 1 else ""
+                sen += "a " + i_in.name + ", " if idx < size-1 and idx != size-2 else ""
+                sen += "a " + i_in.name + " " if idx == size-2 else ""                    
+                sen += "and a " + i_in.name + "." if size > 1 and idx == size-1 else ""
+        else:
+            sen += "The chest is empty."
         return sen
 
     def describe_item_need(self, missing):

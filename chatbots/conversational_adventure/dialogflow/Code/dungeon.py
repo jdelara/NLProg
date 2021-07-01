@@ -2,6 +2,7 @@ from player import Player
 from character import Character
 from item import Item
 from action import Action
+from game import Game
 
 class Dungeon:
     def __init__(self):
@@ -10,7 +11,7 @@ class Dungeon:
         self.characters = []
         self.items = []
         self.rooms = []
-        self.game = None
+        self.game = Game()
     
     def set_mins(self, min_rooms, min_players, min_characters, min_items):
         self.min_rooms = min_rooms
@@ -46,6 +47,17 @@ class Dungeon:
 
     def set_player_room(self, idx):
         self.players[self.game.turn].room = self.rooms[idx-1]
+        self.rooms[idx-1].players.append(self.players[self.game.turn])
+    
+    def remain_players(self):        
+        return [player.name for player in self.players if not player.human_id]        
+
+    def print_remain_players(self):
+        sen = ""
+        players = self.remain_players()
+        for player in players:
+            sen += "\n\t\t- " + player
+        return sen
 
     # CHARACTER
     def add_character(self, character):
@@ -104,6 +116,14 @@ class Dungeon:
             sen += "\t\t- " + item.name + "\n"
         return sen
     
+    # HUMAN
+    def human_has_player(self, id):
+        players_id = [player.human_id for player in self.players]
+        return id in players_id
+    
+    def describe_turn(self):
+        return "<b>Turn of " + self.players[self.game.turn].name + ".<b>\n\n" if len(self.players) > 1 else ""
+
     # DUNGEON
     def dungeon_info(self):
         return "The dungeon has:\n\t\t- " + str(len(self.players)) + " Player(s):\n" + self.print_players() + "\t\t- " + str(len(self.characters)) + \
@@ -111,6 +131,11 @@ class Dungeon:
         
     def is_playable(self):        
         return (self.n_rooms >= 5 and len(self.players) > 0 and len(self.characters) > 0 and len(self.items) > 0)
+    
+    def change_turn(self):
+        print(self.game.turn)
+        self.game.turn = self.game.turn+1 if self.game.turn < len(self.players) - 1 else 0
+        print(self.game.turn)
 
     def missing_values(self):
         msg = ""
@@ -131,6 +156,9 @@ class Dungeon:
                     }
                 ],
             }
+        
+    def check_turn(self, id):
+        return self.players[self.game.turn].human_id == id
 
     def reset(self):
         self.players = []
@@ -138,7 +166,7 @@ class Dungeon:
         self.characters = []
         self.items = []
         self.rooms = []
-        self.game = None
+        self.game = Game()
     
     def aux(self):
         self.reset()
@@ -147,29 +175,32 @@ class Dungeon:
         player2 = Player("Mary")
         player2.health = 115
         self.players.append(player1)
-        self.players.append(player2)
+        #self.players.append(player2)
         #--------------------------------------------------------------------------------------
         self.n_rooms = 6
         #--------------------------------------------------------------------------------------
         item1 = Item("potion")
         action1 = Action("You can take the item")
-        action2 = Action("You can consume the item", "It will kill the player", True, [], [])
+        action2 = Action("You can consume the item", "It will kill the player", True)        
         item1.add_action("take", action1)
         item1.add_action("consume", action2)
+        item1.inside = "chest"
         item2 = Item("chest")
-        action1 = Action("You can open the item", "", False, ["key"], ["potion", "rock", "book"])
+        action1 = Action("You can open the item", "", False, False, ["key"], ["potion", "rock", "book"])
         item2.add_action("open", action1)
         item3 = Item("book")
         action1 = Action("You can take the item")
-        action2 = Action("You can read the item", "In order to end, one must consume the beverage.", False, [], [])
+        action2 = Action("You can read the item", "In order to end, one must consume the beverage.", False, True)
         item3.add_action("take", action1)
         item3.add_action("read", action2)
+        item3.inside = "chest"
         item4 = Item("key")
         action1 = Action("You can take the item")
         item4.add_action("take", action1)
         item5 = Item("rock")
         action1 = Action("You can take the item")
         item5.add_action("take", action1)
+        item5.inside = "chest"
 
         self.items.append(item1)
         self.items.append(item2)

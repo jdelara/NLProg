@@ -1,10 +1,10 @@
 from room import Room
-from dungeon import Dungeon
 import random
 
 class Game:
     def __init__(self):        
         self.turn = 0
+        self.started = False
         
     def build_dungeon(self, dngn):
         self.initialize_items(dngn)
@@ -23,11 +23,24 @@ class Game:
             positions = random.sample(ceros_start, doors)
             for pos in positions:
                 dest_list = [idx for idx, element in enumerate(dngn.rooms) if element.doors[directions[3-pos]] == 0]                
-                if (dest_list):
-                    dest = random.choice(dest_list)+1
-                    if not dest in dngn.rooms[i].doors.values() and not i+1 in dngn.rooms[dest-1].doors.values() and dest != i+1:
+                if (dest_list):                    
+                    dest_list.remove(i) if i in dest_list else dest_list                    
+                    dest = random.choice(dest_list)+1 if dest_list else None
+                    while(dest_list):
+                        if dest in dngn.rooms[i].doors.values() or i+1 in dngn.rooms[dest-1].doors.values():
+                            dest_list.remove(dest-1)
+                            dest = random.choice(dest_list)+1 if dest_list else None
+                        else:
+                            break
+                    if (dest_list):                
                         dngn.rooms[i].doors[directions[pos]] = dest
-                        dngn.rooms[dest-1].doors[directions[3-pos]] = i+1                         
+                        dngn.rooms[dest-1].doors[directions[3-pos]] = i+1
+        if any(all(value == 0 for value in item.doors.values()) for item in dngn.rooms):
+            dngn.rooms = [dict.fromkeys(item.rooms, 0) for item in dngn.rooms]
+            for room in dngn.rooms:
+                print(room.doors)
+            self.build_rooms_random()
+
 
     def build_characters(self, dngn):
         for c in dngn.characters:
@@ -41,16 +54,23 @@ class Game:
             room = random.choice(ceros) if ceros else random.randint(0, dngn.n_rooms-1)
             dngn.rooms[room].items.append(i)      
 
-    def describe_room(self, room):
+    def describe_room(self, room, dngn):
         sen = ""
+        room.players.remove(dngn.players[dngn.game.turn])
+        for idx, p in enumerate(room.players):
+            sen += "You can see " + p.name + " standing in the middle of the room. " if idx == 0 else ""
+            sen += p.name + " is also there. " if idx == 1 else ""
+            sen += "And " + p.name + "." if idx > 1 else ""
+        room.players.append(dngn.players[dngn.game.turn])
         for idx, c in enumerate(room.characters):
             sen += "You can see " + c.name + " standing in the middle of the room. " if idx == 0 else ""
             sen += c.name + " is also there. " if idx == 1 else ""
             sen += "And " + c.name + "." if idx > 1 else ""
         for idx,i in enumerate(room.items):
-            sen += "You can see  a " + i.name + " in the center of the room. " if idx == 0 else ""
-            sen += "There is also a " + i.name + ", " if idx == 1 else ""
-            sen += "And a " + i.name + "." if idx > 1 else ""
+            if not i.inside:
+                sen += "You can see  a " + i.name + " in the center of the room. " if idx == 0 else ""
+                sen += "There is also a " + i.name + ", " if idx == 1 else ""
+                sen += "And a " + i.name + "." if idx > 1 else ""
             if i.open:
                 sen += i.describe_item_in() 
         count = sum(map(lambda x : room.doors[x]>0, room.doors.keys()))
@@ -74,17 +94,24 @@ class Game:
         for item in dngn.items:
             for info in character.info:
                 (sens.append(info) if item.name in info else None)
-        return random.choice(list(set(sens)))
+        for item in character.items:
+            for info in character.info:
+                (sens.append(info) if item.name in info else None)
+        return random.choice(list(set(sens))) if sens else "Sorry, I don't posses any information about what you are asking"
     
     def delete_answer(self, answer, character):
         character.info.remove(answer)
     
     def initialize_items(self, dngn):
         for item in dngn.items:
+            item.inside = next(elem for elem in dngn.items if elem.name == item.inside) if item.inside else None               
+        for item in dngn.items:
             if "open" in item.actions:
                 for idx,aux in enumerate(item.actions["open"].item_in):      
                     item.actions["open"].item_in[idx] = next(elem for elem in dngn.items if elem.name == aux)                    
                     dngn.items.remove(item.actions["open"].item_in[idx])
+                for idx,aux in enumerate(item.actions["open"].item_need):      
+                    item.actions["open"].item_need[idx] = next(elem for elem in dngn.items if elem.name == aux)            
         for character in dngn.characters:
             for idx,item in enumerate(character.items):
                 character.items[idx] = next(elem for elem in dngn.items if elem.name == item)

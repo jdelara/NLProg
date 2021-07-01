@@ -5,6 +5,7 @@ from conf_manager import *
 from game_manager import *
 from dungeon import Dungeon
 
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -22,7 +23,7 @@ if __name__ == "__main__":
 
 
 """
-#intents = ["New-Character", "New-Object", "New-Player", "New-Room", "New-Room-select-number", "Settings"]
+
 dngn = Dungeon()
 dngn.aux()
 parameters_conf = "(req, dngn, contexts_conf)"
@@ -30,6 +31,7 @@ parameters_game = "(req, dngn, contexts_game)"
 contexts_conf = ["context 1", "context 2"]
 contexts_game = ["context 1", "context 2"]
 
+# RUTA DEL WEBHOOK DE CONFIGURACION
 @app.route('/webhook_conf', methods=['POST'])
 def webhook_conf():
     req = request.get_json(force=True)
@@ -37,15 +39,26 @@ def webhook_conf():
     func = req["queryResult"]["intent"]["displayName"].lower().replace("-", "_")
     return eval(func + parameters_conf)
 
-
+# RUTA DEL WEBHOOK DE JUEGO
 @app.route('/webhook_game', methods=['POST'])
 def webhook_game():
     req = request.get_json(force=True)
+    #print(json.dumps(req, indent=4, sort_keys=True))
+    human_id = str(req["originalDetectIntentRequest"]["payload"]["data"]["from"]["id"])
     save_context(req, contexts_game)
-    func = req["queryResult"]["intent"]["displayName"].lower().replace("-", "_")
-    print(func)
-    print("\n"*6)
-    return eval(func + parameters_game)
+    if not dngn.game.started or dngn.check_turn(human_id):
+        func = req["queryResult"]["intent"]["displayName"].lower().replace("-", "_")
+        return eval(func + parameters_game)
+    else:
+        return {
+            "fulfillmentText":"", 
+            "outputContexts": [
+                {
+                    "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/"+contexts_game[0],
+                    "lifespanCount": 1,
+                }
+            ],         
+        }      
 
 
 def save_context(req, contexts):
@@ -55,6 +68,4 @@ def save_context(req, contexts):
         contexts[0] = context if context != "__system_counters__" else contexts[0]
     except:
         contexts[0] = "context 1"
-    """print("Contexto 0 -->", contexts[0])
-    print("Contexto 1 -->", contexts[1])"""
     return contexts

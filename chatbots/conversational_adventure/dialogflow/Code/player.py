@@ -3,7 +3,9 @@ class Player:
         self.name = name
         self.health = 0
         self.room = None
-        self.inventory = []
+        self.inventory = []        
+        self.human_name = ""
+        self.human_id = ""
     
     def get_name(self):
         return self.name
