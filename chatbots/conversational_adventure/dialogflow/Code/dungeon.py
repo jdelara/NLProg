@@ -6,6 +6,7 @@ from game import Game
 
 class Dungeon:
     def __init__(self):
+        self.name = ""
         self.players = []
         self.n_rooms = 0
         self.characters = []
@@ -75,6 +76,9 @@ class Dungeon:
             sen += "\t\t\t\t\t\t- Name: " + character.name + "\n\t\t\t\t\t\t- Greeting: " + character.greetings + "\n\t\t\t\t\t\t- Information:\n"
             for inf in character.info:
                 sen+= "\t"*8 + "- " + inf + "\n"
+            sen+= "\t\t\t\t\t\t- Character items:\n"
+            for item in character.items:
+                sen+= "\t"*8 + "- " + item + "\n"
         return sen
     
     def characters_list(self):
@@ -99,15 +103,19 @@ class Dungeon:
     def print_items(self):
         sen = ""
         for item in self.items:            
-            sen += "\t\t\t\t\t\t- Name: " + item.name + "\n\t\t\t\t\t\t\t\t- Actions: " +"\n"
+            sen += "\t\t\t\t\t\t- Name: " + item.name + "\n"
+            sen += "\t\t\t\t\t\t- Item is inside of: " + (item.inside if item.inside else "Nothing") + "\n"
+            sen += "\t\t\t\t\t\t\t\t- Actions: " +"\n"
             for key,value in item.actions.items():
                 sen += "\t"*10 + "- " + key + "\n"
                 sen += "\t"*12 + "- Description: " + value.desc + "\n"
                 sen += "\t"*12 + "- Effect: " + value.effect + "\n"
                 sen += "\t"*12 + "- Win Condition: " + ("Yes" if value.win else "No") + "\n"
+                sen += "\t"*12 + "- Win Condition: " + ("Yes" if value.lose else "No") + "\n"
                 if (key == "open"):
                     sen += "\t"*12 + "- Items needed to open: " + ', '.join(value.item_need) + "\n"
                     sen += "\t"*12 + "- Items inside: " + ', '.join(value.item_in) + "\n"  
+                
         return sen
 
     def items_list(self):
@@ -115,6 +123,26 @@ class Dungeon:
         for item in self.items:            
             sen += "\t\t- " + item.name + "\n"
         return sen
+    
+    def set_items_inside(self):
+        for item in self.items:
+            if "open" in item.actions:
+                for i in self.items:
+                    i.inside = item.name if i in item.actions["open"].item_in else None
+    
+    def missing_items(self):
+        missing_items = []
+        for item in self.items:
+            if "open" in item.actions:
+                missing_items.extend([i for i in item.actions["open"].item_need if not self.check_item_name(i)])
+                missing_items.extend([i for i in item.actions["open"].item_in if not self.check_item_name(i)])
+        for character in self.characters:
+            missing_items.extend([i for i in character.items if not self.check_item_name(i)])
+        return missing_items
+                
+                   
+
+            
     
     # HUMAN
     def human_has_player(self, id):
@@ -133,9 +161,7 @@ class Dungeon:
         return (self.n_rooms >= 5 and len(self.players) > 0 and len(self.characters) > 0 and len(self.items) > 0)
     
     def change_turn(self):
-        print(self.game.turn)
         self.game.turn = self.game.turn+1 if self.game.turn < len(self.players) - 1 else 0
-        print(self.game.turn)
 
     def missing_values(self):
         msg = ""
@@ -147,20 +173,14 @@ class Dungeon:
              if (len(self.characters) < self.min_characters) else ""
         msg += "There must be at least 1 item. The current number of items is:\t" + str(len(self.items)) + "\n" \
              if (len(self.items) < self.min_items) else ""
-        return {
-                "fulfillmentText":"Your dungeon is missing some configuration\n" + msg + "What do you want to set up?",
-                "outputContexts": [
-                    {
-                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
-                        "lifespanCount": 1,
-                    }
-                ],
-            }
+        return msg
+        
         
     def check_turn(self, id):
         return self.players[self.game.turn].human_id == id
 
     def reset(self):
+        self.name = ""
         self.players = []
         self.n_rooms = 0
         self.characters = []
@@ -186,6 +206,7 @@ class Dungeon:
         item1.add_action("consume", action2)
         item1.inside = "chest"
         item2 = Item("chest")
+        #action1 = Action("You can open the item", "", False, False, ["key", "bomb"], ["potion", "rock", "book", "lamp"])
         action1 = Action("You can open the item", "", False, False, ["key"], ["potion", "rock", "book"])
         item2.add_action("open", action1)
         item3 = Item("book")
@@ -215,9 +236,11 @@ class Dungeon:
         character1.items.append("key")
         character2 = Character("Mortek the brave")
         character2.greetings = "Greetins adventurer"
-        character2.info.append("You need to find Magnus, he will give you a key")
+        character2.info.append("You have to find Magnus the red, he will give you something you need.")
         self.characters.append(character1)
         self.characters.append(character2)
+
+        self.name = "testing_game"
 
          
         

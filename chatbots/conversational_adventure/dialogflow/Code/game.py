@@ -116,6 +116,14 @@ class Game:
             for idx,item in enumerate(character.items):
                 character.items[idx] = next(elem for elem in dngn.items if elem.name == item)
                 dngn.items.remove(character.items[idx])
+    
+    def command_list(self):
+        sen = ""
+        sen += "There is a list of actions available for the player: \n"
+        sen += "\t\t - Type 'describe room' to get a description of the current room the player is in.\n"
+        sen += "\t\t - Type 'check inventory' to take a look to the player's inventory.\n"
+        sen += "\t\t - Type 'see map' to get a picture of the current visited rooms.\n"
+        return sen
 
 
         

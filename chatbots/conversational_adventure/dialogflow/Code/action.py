@@ -1,11 +1,12 @@
 class Action:
-    def __init__(self, desc, effect="", win=False, lose=False, item_need=[], item_in=[]):
+    def __init__(self, desc, effect="", win=False, lose=False, item_need=[], item_in=[], hp = 0):
         self.desc = desc
         self.effect = effect
         self.win = win
         self.lose = lose
         self.item_need = item_need
         self.item_in = item_in
+        self.hp = hp
         
     
     def set_item_need(self, items):

@@ -153,8 +153,21 @@ def move_room(req, dngn, contexts):
             }
 
 def check_inventory(req, dngn, contexts):
+    return {            
+            "telegram": {
+                "chat_id": "1799179541",
+                "text": "esto es un ejhemplo"
+            }                      
+        }
     return {
             "fulfillmentText": dngn.players[dngn.game.turn].get_inventory(),
+            
+            "telegram": {
+                "chat_id": "1799179541",
+                "text": "<b>hello formatted custom telegram text</b>"
+                
+            },
+            
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/"+contexts[0],
@@ -359,9 +372,10 @@ def consume_item(item, dngn):
     dngn.players[dngn.game.turn].inventory.remove(item) if item in dngn.items else None
     item.inside.actions["open"].item_in.remove(item) if item.inside else None
     item.inside = None
-    if item.actions["consume"].win:
+    dngn.player[dngn.game.turn].health += item.actions["consume"].hp
+    if item.actions["consume"].win and dngn.player[dngn.game.turn].health > 0:
         return end_game()
-    if item.actions["consume"].lose:
+    if item.actions["consume"].lose or dngn.player[dngn.game.turn].health <= 0:
         return game_over()
     else:
         dngn.change_turn()
@@ -375,9 +389,43 @@ def consume_item(item, dngn):
             ],            
         }
 
+def take_note(req, dngn, contexts):
+    return {
+            "fulfillmentText":"What do you want to write as a note?",
+            "outputContexts": [
+                {
+                    "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/write-note",
+                    "lifespanCount": 1,
+                }
+            ],            
+        }
+
+def write_note(req, dngn, contexts):
+    dngn.players[dngn.game.turn].notes.append(req["queryResult"]["queryText"])
+    return {
+            "fulfillmentText":"Note saved.",
+            "outputContexts": [
+                {
+                    "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
+                    "lifespanCount": 1,
+                }
+            ],            
+        }
+
+def read_notes(req, dngn, contexts):
+    answer = dngn.players[dngn.game.turn].get_notes() if dngn.players[dngn.game.turn].notes else "You do not have any notes for the moment."
+    return {
+            "fulfillmentText": answer,
+            "outputContexts": [
+                {
+                    "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
+                    "lifespanCount": 1,
+                }
+            ],            
+        }
 ######################################################################################
 
-# Win - Lose conds
+# Extra
 
 ######################################################################################
 
@@ -391,6 +439,16 @@ def end_game():
         "fulfillmentText":"CONGRATULATIONS, YOU HAVE COMPLETED THE DUNGEON",        
     }
 
+def help(req, dngn, contexts):
+    return {
+            "fulfillmentText":dngn.game.command_list(),
+            "outputContexts": [
+                {
+                    "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
+                    "lifespanCount": 1,
+                }
+            ],            
+        }
 
 
 

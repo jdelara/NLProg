@@ -5,6 +5,33 @@ from action import Action
 from item import Item
 import fallback
 
+
+
+def testing(req, dngn, contexts):
+    print("ENTRO")
+    return {                 
+        "fulfillmentText": "testing not telegram",
+        "fulfillmentMessages": [
+        {
+            "text": {
+                "text": [
+                    "\'<b>'TELEGRAM TESTING A BOT\'<\b>'"
+                ]                
+            },            
+            "platform": "TELEGRAM",
+            "parse_mode": "HTML"
+        },
+        {
+            "text": {
+                "text": [
+                    "testing not telegram"
+                ]
+            }
+        }
+        ],
+    } 
+        
+    
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 WELCOME
@@ -106,16 +133,27 @@ def player_name(req, dngn, contexts):
 def player_health(req, dngn, contexts):
     player = dngn.get_player()
     health = req["queryResult"]["parameters"]["health"]
-    player.set_health(health)
-    return {
-            "fulfillmentText":"So " + player.get_name() + " will have " + str(health) + " HP. What else do you want to set up?", 
-            "outputContexts": [
-                {
-                    "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
-                    "lifespanCount": 1,
-                }
-            ],           
-        }
+    if health > 0:
+        player.set_health(health)
+        return {
+                "fulfillmentText":"So " + player.get_name() + " will have " + str(health) + " HP. What else do you want to set up?", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
+    else:
+        return {
+                "fulfillmentText":"Player's health must a number greater than 0. Please, type a valid number.", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/hp-player",
+                        "lifespanCount": 1,
+                    }
+                ],           
+            }
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -212,7 +250,7 @@ def item_take(dngn, actions, name, msg = ""):
     action = Action("You can take the " + item.name)
     item.add_action(actions[0].lower(),action)
     return {
-            "fulfillmentText":"Will taking the " + item.name + " be a winning condition?", 
+            "fulfillmentText":"Will taking the " + item.name + " be a winning condition, losing condition or none of them", 
             "outputContexts": [
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/win-condition",
@@ -250,7 +288,7 @@ def item_consumption(req, dngn, contexts):
     item = dngn.get_item(name)
     item.actions[actions[0].lower()].effect = req["queryResult"]["queryText"]
     return {
-            "fulfillmentText":"Will consuming the " + item.name + " be a winning condition?", 
+            "fulfillmentText":"Will consuming the " + item.name + " be a winning condition, losing condition or none of them", 
             "outputContexts": [
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/win-condition",
@@ -307,8 +345,10 @@ def item_open_in(req, dngn, contexts):
     name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
     item = dngn.get_item(name)
     item.actions[actions[0].lower()].set_item_in(req["queryResult"]["parameters"]["item"])
+    for i in dngn.items:
+        i.inside = item.name if i.name == req["queryResult"]["parameters"]["item"] else None
     return {
-            "fulfillmentText":"Will opening the " + item.name + " be a winning condition?", 
+            "fulfillmentText":"Will opening the " + item.name + " be a winning condition, losing condition or none of them", 
             "outputContexts": [
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/win-condition",
@@ -346,7 +386,7 @@ def item_read_description(req, dngn, contexts):
     item = dngn.get_item(name)
     item.actions[actions[0].lower()].desc = req["queryResult"]["queryText"]
     return {
-            "fulfillmentText":"Will reading the " + item.name + " be a winning condition?", 
+            "fulfillmentText":"Will reading the " + item.name + " be a winning condition, losing condition or none of them", 
             "outputContexts": [
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/win-condition",
@@ -359,13 +399,43 @@ def item_read_description(req, dngn, contexts):
             ],         
         }
 
+def win_condition(req, dngn, contexts):
+    idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("win-condition"))
+    actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
+    name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
+    item = dngn.get_item(name)
+    if req["queryResult"]["parameters"]["win"]:
+        item.actions[actions[0].lower()].win = True
+        item.actions[actions[0].lower()].lose = False
+        sen = " will be a winning condition')"        
+    elif req["queryResult"]["parameters"]["lose"]:
+        item.actions[actions[0].lower()].win = False
+        item.actions[actions[0].lower()].lose = True
+        sen = " will be a losing condition')"
+    else:
+        item.actions[actions[0].lower()].win = False
+        item.actions[actions[0].lower()].lose = False
+        sen = " will not be neither a winning nor a losing condition')"
+    if (actions[1:]):
+        return eval("item_"+actions[1].lower()+"(dngn, actions[1:], name, 'To " + actions[0].lower() \
+            + " the " + item.name + sen)
+    else:
+        return {
+                "fulfillmentText":"Perfect! The " + item.name + " has been set up. What else do you want to configure?", 
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],         
+            }
 
 def win_condition_yes(req, dngn, contexts):
     idx = next(idx for idx, element in enumerate(req["queryResult"]["outputContexts"]) if element["name"].endswith("win-condition"))
     actions = req["queryResult"]["outputContexts"][idx]["parameters"]["action"]
     name = req["queryResult"]["outputContexts"][idx]["parameters"]["name"]
     item = dngn.get_item(name)
-    item.actions[actions[0].lower()].win = True
+    
     if(actions[1:]):
         return eval("item_"+actions[1].lower()+"(dngn, actions[1:], name, 'To " + actions[0].lower() \
             + " the " + item.name + " will be a winning condition')")
@@ -462,6 +532,7 @@ def greet_character_conf(req, dngn, contexts):
 def inf_character(req, dngn, contexts):
     character = dngn.get_character()
     character.info.append(req["queryResult"]["queryText"])
+    character.items.extend(req["queryResult"]["parameters"]["item"])
     return {
             "fulfillmentText":"Anything else?", 
             "outputContexts": [
@@ -1149,14 +1220,82 @@ DUNGEON
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 def end_configuration(req, dngn, contexts):
-    dngn_info = dngn.dungeon_info()
-    if(dngn.is_playable()):
-        dngn = Dungeon()
-        return {
-                "fulfillmentText":"Your dungeon is now finished. " + dngn_info,
+    missing_items = dngn.missing_items()
+    if not missing_items:
+        if(dngn.is_playable()): 
+            dngn.set_items_inside()       
+            return {
+                    "fulfillmentText":"Your dungeon is almost finished. Please choose a name for this it.",
+                    "outputContexts": [
+                        {
+                            "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/dungeon-name",
+                            "lifespanCount": 1,
+                        }
+                    ],
+                }            
+        else:
+            return {
+                "fulfillmentText":"Your dungeon is missing some configuration\n" + dngn.missing_values() + "What do you want to set up?",
+                "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],
             }
     else:
-        return(dngn.missing_values())
+        return {
+                    "fulfillmentText":"You can't finish the dungeon because there are some items not created yet:\n\t\t-" + '\n\t\t- '.join(missing_items),
+                    "outputContexts": [
+                        {
+                            "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/dungeon-name",
+                            "lifespanCount": 1,
+                        }
+                    ],
+                }
+
+def dungeon_name(req, dngn, contexts):
+    name = req["queryResult"]["parameters"]["dungeon"].title()
+    # COMPROBACION DE SI YA EXISTE
+    dngn.name = name
+    return {
+            "fulfillmentText":"'" + name + "' is now finished. " + dngn.dungeon_info(),            
+        }   
+    
+
+def reset_game(req, dngn, contexts):
+    return {
+            "fulfillmentText": "You are about to reset the configuration. This action cannot be undone. Are you sure?",
+            "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/reset-game",
+                        "lifespanCount": 1,
+                    }
+                ],
+            }
+
+def reset_game_yes(req, dngn, contexts):
+    dngn.reset()
+    return {
+            "fulfillmentText": "All data has been deleted. What do you want to set up next?",
+            "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],
+            }
+
+def reset_game_no(req, dngn, contexts):
+    return {
+            "fulfillmentText": "Ok. What do you want to set up next?",
+            "outputContexts": [
+                    {
+                        "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                        "lifespanCount": 1,
+                    }
+                ],
+            }
 
 
 

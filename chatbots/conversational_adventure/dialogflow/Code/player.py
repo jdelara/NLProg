@@ -6,6 +6,7 @@ class Player:
         self.inventory = []        
         self.human_name = ""
         self.human_id = ""
+        self.notes = []
     
     def get_name(self):
         return self.name
@@ -21,3 +22,9 @@ class Player:
             for i in self.inventory:
                 sen += "You have a " + i.name + ". "
         return sen 
+    
+    def get_notes(self):
+        sen = ""
+        for note in self.notes:
+            sen += "\t\t - " + note + "\n"
+        return sen
