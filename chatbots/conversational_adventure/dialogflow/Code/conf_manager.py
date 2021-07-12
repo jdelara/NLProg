@@ -8,28 +8,59 @@ import fallback
 
 
 def testing(req, dngn, contexts):
-    print("ENTRO")
-    return {                 
-        "fulfillmentText": "testing not telegram",
+    return {
+        "fulfillmentText": None,
+        "outputContexts": None,
         "fulfillmentMessages": [
-        {
-            "text": {
-                "text": [
-                    "\'<b>'TELEGRAM TESTING A BOT\'<\b>'"
-                ]                
-            },            
-            "platform": "TELEGRAM",
-            "parse_mode": "HTML"
-        },
-        {
-            "text": {
-                "text": [
-                    "testing not telegram"
-                ]
-            }
-        }
-        ],
-    } 
+            {
+            "payload": {
+                "telegram": {
+                    "text": "Here are the buttons",
+                    "reply_markup": {
+                        "keyboard": [
+                                [
+                                    {
+                                        "text": "Go north",
+                                        "request_contact": False,
+                                        "request_location": False
+                                    },
+                                    
+                                ],
+                                [
+                                    {
+                                        "text": "Go west",
+                                        "request_contact": False,
+                                        "request_location": False
+                                    },
+                                    {
+                                        "text": "Go east",
+                                        "request_contact": False,
+                                        "request_location": False
+                                    }
+                                ],
+                                [
+                                    {
+                                        "text": "Go south",
+                                        "request_contact": False,
+                                        "request_location": False
+                                    }
+                                ]
+                            ],
+                            "resize_keyboard": True,
+                            "one_time_keyboard": True,
+                            "selective": False
+                        }
+                    },
+                    "payloadMessage": None,
+                    "id": "sinId",
+                    "source": "TELEGRAM"
+                    }
+                }
+            ],
+        "payload": {}
+    }
+    
+    
         
     
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

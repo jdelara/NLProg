@@ -13,9 +13,7 @@ def default_welcome_intent_game(req, dngn, contexts):
     dngn.game.build_dungeon(dngn)
     for player in dngn.players:
         player.room = dngn.rooms[0]
-        dngn.rooms[0].players.append(player)
-    
-
+        dngn.rooms[0].players.append(player)  
     key = dngn.characters[0].items[0]
     dngn.players[dngn.game.turn].inventory.append(key)
     for r in dngn.rooms:
@@ -35,7 +33,7 @@ def default_welcome_intent_game(req, dngn, contexts):
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/select-player",
                     "lifespanCount": 1,
                 }
-            ],
+            ]            
         }
 
 def default_fallback_intent_game(req, dngn, contexts):
@@ -81,15 +79,18 @@ def select_player(req, dngn, contexts):
                 }            
             else:
                 dngn.game.started = True
+                text = name + " assigned to " + player.human_name + ". All players have been selected. Game is starting.\n\n\n" + \
+                        dngn.describe_turn() + dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn)
                 return {
-                    "fulfillmentText":name + " assigned to " + player.human_name + ". All players have been selected. Game is starting.\n\n\n" +
-                        dngn.describe_turn() + dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn),
+                    "fulfillmentText":text,
                     "outputContexts": [
                         {
                             "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                             "lifespanCount": 1,
                         }
                     ],
+                    "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                    "payload":{}
                 }
         else:
             return {
@@ -103,14 +104,17 @@ def select_player(req, dngn, contexts):
                 }
 
 def describe_room(req, dngn, contexts):
+    text = dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn)
     return {
-            "fulfillmentText": dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn),
+            "fulfillmentText": text,
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ],  
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+            "payload":{}          
         }
 
 ######################################################################################
@@ -128,52 +132,44 @@ def move_room(req, dngn, contexts):
         dngn.players[dngn.game.turn].room.players.remove(dngn.players[dngn.game.turn])
         dngn.set_player_room(door.doors[direction])
         dngn.change_turn()
+        text = dngn.describe_turn() + dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn) + " What do you want to do?"
         return {
-                "fulfillmentText": dngn.describe_turn() + dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn) + 
-                    " What do you want to do?",
+                "fulfillmentText":  text,
                 "outputContexts": [
                     {
                         "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                         "lifespanCount": 1,
                     }
                 ],
-                
+                "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                "payload":{} 
             }
-    else:            
+    else:   
+        text = "Sorry that is not a valid direction. " + dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn)         
         return {
-                "fulfillmentText": "Sorry that is not a valid direction. " + 
-                 dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn),
+                "fulfillmentText": text,
                 "outputContexts": [
                     {
                         "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                         "lifespanCount": 1,
                     }
                 ],
-                
+                "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                "payload":{} 
             }
 
 def check_inventory(req, dngn, contexts):
-    return {            
-            "telegram": {
-                "chat_id": "1799179541",
-                "text": "esto es un ejhemplo"
-            }                      
-        }
+    text = dngn.players[dngn.game.turn].get_inventory()
     return {
-            "fulfillmentText": dngn.players[dngn.game.turn].get_inventory(),
-            
-            "telegram": {
-                "chat_id": "1799179541",
-                "text": "<b>hello formatted custom telegram text</b>"
-                
-            },
-            
+            "fulfillmentText": text,            
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/"+contexts[0],
                     "lifespanCount": 1,
                 }
             ],
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+            "payload":{} 
         }
 
 
@@ -187,25 +183,30 @@ def greet_character_game(req, dngn, contexts):
     name = req["queryResult"]["parameters"]["characterName"].lower().capitalize()
     try:
         idx = next(idx for idx, elem in enumerate(dngn.players[dngn.game.turn].room.characters) if elem.name == name) 
+        text = dngn.players[dngn.game.turn].room.characters[idx].greetings
         return {
-            "fulfillmentText":dngn.players[dngn.game.turn].room.characters[idx].greetings,
+            "fulfillmentText": text,
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ], 
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+            "payload":{}            
         }
     except:
+        text = "Sorry, there is not a character with that name in the room. " + dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn)
         return {
-            "fulfillmentText":"Sorry, there is not a character with that name in the room. " + 
-                 dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn),
+            "fulfillmentText": text,
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ],    
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+            "payload":{}         
         }
 
 def info_character_game(req, dngn, contexts):
@@ -233,18 +234,22 @@ def info_character_game(req, dngn, contexts):
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ], 
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(answer),
+            "payload":{}           
         }
     except:
+        text = "Sorry, there is not a character with that name in the room. " + dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn)
         return {
-            "fulfillmentText":"Sorry, there is not a character with that name in the room. " + 
-                 dngn.game.describe_room(dngn.players[dngn.game.turn].room, dngn),
+            "fulfillmentText":text,
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ],     
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(answer),
+            "payload":{}        
         }
 
 ######################################################################################
@@ -265,36 +270,45 @@ def interact_game_object(req, dngn, contexts):
         if action in item.actions:
             return eval(action+"_item(item, dngn)")
         else:
+            text = "You can not " + action + " the " + name + "."
             return {
-                    "fulfillmentText":"You can not " + action + " the " + name + ".",
+                    "fulfillmentText":text,
                     "outputContexts": [
                         {
                             "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                             "lifespanCount": 1,
                         }
-                    ],            
+                    ],
+                    "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                    "payload":{}              
                 }
     else:
+        text = "There is no " + name + " in this room."
         return {
-                "fulfillmentText":"There is no " + name + " in this room.",
+                "fulfillmentText":text,
                 "outputContexts": [
                     {
                         "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                         "lifespanCount": 1,
                     }
-                ],            
+                ],  
+                "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                "payload":{}            
             }
 
 def take_item(item, dngn):
     if item in dngn.players[dngn.game.turn].inventory:
+        text = "You already have the " + item.name + " in your inventory."
         return {
-                "fulfillmentText":"You already have the " + item.name + " in your inventory.",
+                "fulfillmentText":text,
                 "outputContexts": [
                     {
                         "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                         "lifespanCount": 1,
                     }
-                ],            
+                ], 
+                "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                "payload":{}           
             }
     else:
         dngn.players[dngn.game.turn].inventory.append(item)
@@ -307,6 +321,7 @@ def take_item(item, dngn):
             return game_over()
         else:
             dngn.change_turn()
+            text = "You have taken the " + item.name + "."
             return {
                     "fulfillmentText":"You have taken the " + item.name + ".",
                     "outputContexts": [
@@ -314,7 +329,9 @@ def take_item(item, dngn):
                             "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                             "lifespanCount": 1,
                         }
-                    ],            
+                    ],  
+                    "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                    "payload":{}           
                 }
 
 def open_item(item, dngn):
@@ -329,25 +346,31 @@ def open_item(item, dngn):
             return game_over()
         else:
             dngn.change_turn()
+            text = "You have opened the " + item.name + ". " + item.describe_item_in()
             return {
-                    "fulfillmentText":"You have opened the " + item.name + ". " + item.describe_item_in(),
+                    "fulfillmentText":text,
                     "outputContexts": [
                         {
                             "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                             "lifespanCount": 1,
                         }
-                    ],            
+                    ], 
+                    "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                    "payload":{}           
                 }
     else:
-        missing = [item for item in item.actions["open"].item_need if not item in dngn.players[dngn.game.turn].inventory]        
+        missing = [item for item in item.actions["open"].item_need if not item in dngn.players[dngn.game.turn].inventory]   
+        text = item.describe_item_need(missing)     
         return {
-                "fulfillmentText":item.describe_item_need(missing),
+                "fulfillmentText":text,
                 "outputContexts": [
                     {
                         "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                         "lifespanCount": 1,
                     }
-                ],            
+                ],   
+                "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+                "payload":{}           
             }
     
 def read_item(item, dngn):   
@@ -357,14 +380,17 @@ def read_item(item, dngn):
         return game_over()
     else:
         dngn.change_turn()
+        text = "You can read: " + item.actions["read"].effect
         return {
-            "fulfillmentText":"You can read: " + item.actions["read"].effect,
+            "fulfillmentText":text,
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ], 
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+            "payload":{}             
         }
 
 def consume_item(item, dngn): 
@@ -379,14 +405,17 @@ def consume_item(item, dngn):
         return game_over()
     else:
         dngn.change_turn()
+        text = "You have consumed the " + item.name + "."
         return {
-            "fulfillmentText":"You have consumed the " + item.name + ".",
+            "fulfillmentText":text,
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ],     
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+            "payload":{}         
         }
 
 def take_note(req, dngn, contexts):
@@ -402,14 +431,17 @@ def take_note(req, dngn, contexts):
 
 def write_note(req, dngn, contexts):
     dngn.players[dngn.game.turn].notes.append(req["queryResult"]["queryText"])
+    text = "Note saved."
     return {
-            "fulfillmentText":"Note saved.",
+            "fulfillmentText":text,
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ], 
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+            "payload":{}            
         }
 
 def read_notes(req, dngn, contexts):
@@ -421,7 +453,9 @@ def read_notes(req, dngn, contexts):
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ],   
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(answer),
+            "payload":{}          
         }
 ######################################################################################
 
@@ -440,14 +474,17 @@ def end_game():
     }
 
 def help(req, dngn, contexts):
+    text = dngn.game.command_list()
     return {
-            "fulfillmentText":dngn.game.command_list(),
+            "fulfillmentText":text,
             "outputContexts": [
                 {
                     "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
                     "lifespanCount": 1,
                 }
-            ],            
+            ], 
+            "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
+            "payload":{}  
         }
 
 

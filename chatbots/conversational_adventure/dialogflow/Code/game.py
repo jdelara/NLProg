@@ -124,6 +124,54 @@ class Game:
         sen += "\t\t - Type 'check inventory' to take a look to the player's inventory.\n"
         sen += "\t\t - Type 'see map' to get a picture of the current visited rooms.\n"
         return sen
+    
+    def button_telegram_fulfillmentMessages(self, text):
+        return [
+                {
+                "payload": {
+                    "telegram": {
+                        "text": text,
+                        "reply_markup": {
+                            "keyboard": [
+                                    [
+                                        {
+                                            "text": "Go north",
+                                            "request_contact": False,
+                                            "request_location": False
+                                        },
+                                        
+                                    ],
+                                    [
+                                        {
+                                            "text": "Go west",
+                                            "request_contact": False,
+                                            "request_location": False
+                                        },
+                                        {
+                                            "text": "Go east",
+                                            "request_contact": False,
+                                            "request_location": False
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "text": "Go south",
+                                            "request_contact": False,
+                                            "request_location": False
+                                        }
+                                    ]
+                                ],
+                                "resize_keyboard": True,
+                                "one_time_keyboard": True,
+                                "selective": False
+                            }
+                        },
+                        "payloadMessage": None,
+                        "source": "TELEGRAM"
+                        }
+                    }
+                ]
+
 
 
         
