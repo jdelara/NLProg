@@ -16,7 +16,7 @@ def default_welcome_intent_game(req, dngn, contexts):
         dngn.rooms[0].players.append(player)  
     key = dngn.characters[0].items[0]
     dngn.players[dngn.game.turn].inventory.append(key)
-    for r in dngn.rooms:
+    """for r in dngn.rooms:
         print(r.doors.values())
         if r.characters:
             print("Characters")
@@ -25,7 +25,7 @@ def default_welcome_intent_game(req, dngn, contexts):
         if r.items:
             print("Items")
             for i in r.items:
-                print(i.name)
+                print(i.name)"""
     return {
             "fulfillmentText":"Hello there!, I am the Game Manager. Choose a character to play as:" + dngn.print_remain_players(),            
             "outputContexts": [

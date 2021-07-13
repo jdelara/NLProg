@@ -43,7 +43,7 @@ def webhook_conf():
 @app.route('/webhook_game', methods=['POST'])
 def webhook_game():
     req = request.get_json(force=True)
-    print(json.dumps(req, indent=4, sort_keys=True))
+    #print(json.dumps(req, indent=4, sort_keys=True))
     human_id = str(req["originalDetectIntentRequest"]["payload"]["data"]["from"]["id"])
     save_context(req, contexts_game)
     if not dngn.game.started or dngn.check_turn(human_id):

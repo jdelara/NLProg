@@ -8,7 +8,7 @@ class Game:
         
     def build_dungeon(self, dngn):
         self.initialize_items(dngn)
-        self.build_rooms_random(dngn)
+        self.build_rooms_arranged(dngn)
         self.build_items(dngn)
         self.build_characters(dngn)
 
@@ -40,6 +40,71 @@ class Game:
             for room in dngn.rooms:
                 print(room.doors)
             self.build_rooms_random()
+        
+    def build_rooms_arranged(self, dngn):
+        directions = ["north", "east", "west", "south"]
+        dngn.rooms = [Room() for i in range(dngn.n_rooms)]        
+        ceros_start = [idx for idx, element in enumerate(dngn.rooms[0].doors.values()) if element == 0]
+        doors = random.randint(1,4)
+        positions = random.sample(ceros_start, doors)        
+        for pos in positions:
+            dest_list = [idx for idx, element in enumerate(dngn.rooms) if element.doors[directions[3-pos]] == 0 and idx != 0]
+            values = list(dngn.rooms[0].doors.values())    
+            dest = [x for x in dest_list if x+1 not in values]                
+            dest = random.choice(dest)            
+            dngn.rooms[0].doors[directions[pos]] = dest+1
+            dngn.rooms[dest].doors[directions[3-pos]] = 1
+        for i in range(1,dngn.n_rooms):
+            count = sum(map(lambda x : dngn.rooms[i].doors[x]==0, dngn.rooms[i].doors.keys()))
+            if count == 4:                
+                dir = random.randint(0,3)
+                dest_list = [idx for idx, element in enumerate(dngn.rooms) if element.doors[directions[3-dir]] == 0 and idx != i]               
+                dest = random.choice(dest_list)+1 if dest_list else None           
+                if dest:                                     
+                    dngn.rooms[i].doors[directions[dir]] = dest
+                    dngn.rooms[dest-1].doors[directions[3-dir]] = i+1
+                    next_room = dngn.rooms[dest-1]   
+                    if dir == 0 or dir == 3: # sur/norte este                        
+                        if next_room.doors["east"]-1 >= 0:
+                            middle_room = dngn.rooms[next_room.doors["east"]-1]
+                            if middle_room.doors[directions[3-dir]]-1 >= 0:
+                                final_room = dngn.rooms[middle_room.doors[directions[3-dir]]-1]
+                                dngn.rooms[i].doors["east"] = middle_room.doors[directions[3-dir]] if final_room.doors["west"] == 0 else 0
+                                final_room.doors["west"] = i+1 if final_room.doors["west"] == 0 else final_room.doors["west"]                              
+                    else: # este/oeste norte
+                        if next_room.doors["north"]-1 >= 0:
+                            middle_room = dngn.rooms[next_room.doors["north"]-1]
+                            if middle_room.doors[directions[3-dir]]-1 >= 0:
+                                final_room = dngn.rooms[middle_room.doors[directions[3-dir]]-1]
+                                dngn.rooms[i].doors["north"] = middle_room.doors[directions[3-dir]] if final_room.doors["south"] == 0 else 0
+                                final_room.doors["south"] = i+1 if final_room.doors["south"] == 0 else final_room.doors["south"]                        
+                    if dir == 0 or dir == 3: # sur/norte oeste
+                        if next_room.doors["west"]-1 >= 0:
+                            middle_room = dngn.rooms[next_room.doors["west"]-1]
+                            if middle_room.doors[directions[3-dir]]-1 >= 0:
+                                final_room = dngn.rooms[middle_room.doors[directions[3-dir]]-1]                       
+                                dngn.rooms[i].doors["west"] = middle_room.doors[directions[3-dir]] if final_room.doors["east"] == 0 else 0
+                                final_room.doors["east"] = i+1 if final_room.doors["east"] == 0 else final_room.doors["east"]                        
+                    else: # este/oeste sur
+                        if next_room.doors["south"]-1 >= 0:
+                            middle_room = dngn.rooms[next_room.doors["south"]-1]
+                            if middle_room.doors[directions[3-dir]]-1 >= 0:
+                                final_room = dngn.rooms[middle_room.doors[directions[3-dir]]-1]
+                                dngn.rooms[i].doors["south"] = middle_room.doors[directions[3-dir]] if final_room.doors["north"] == 0 else 0
+                                final_room.doors["north"] = i+1 if final_room.doors["north"] == 0 else final_room.doors["north"]                       
+        self.print_aux(dngn)  
+        print("\n") 
+
+
+    def print_aux(self,dngn):
+        for idx,r in enumerate(dngn.rooms):
+            print(idx+1, list(r.doors.values()))
+                        
+
+
+
+
+        
 
 
     def build_characters(self, dngn):
