@@ -3,6 +3,8 @@ from player import Player
 from character import Character
 from action import Action
 from item import Item
+import map_builder as mb
+import pathlib
 
 import random
 
@@ -16,6 +18,7 @@ def default_welcome_intent_game(req, dngn, contexts):
         dngn.rooms[0].players.append(player)  
     key = dngn.characters[0].items[0]
     dngn.players[dngn.game.turn].inventory.append(key)
+    mb.map_builder_start([room.doors for room in dngn.rooms])
     """for r in dngn.rooms:
         print(r.doors.values())
         if r.characters:
@@ -115,6 +118,25 @@ def describe_room(req, dngn, contexts):
             ],  
             "fulfillmentMessages":dngn.game.button_telegram_fulfillmentMessages(text),
             "payload":{}          
+        }
+
+def see_map(req, dngn, contexts):
+    raiz = pathlib.Path(__file__).parent.parent.resolve()
+    mb.print_map([room.doors for room in dngn.rooms])
+    mb.save_map(raiz)
+    print(str(raiz))
+    return {
+        "fulfillmentText": None,
+        "outputContexts": None,
+        "fulfillmentMessages": [
+            {
+                "image": {
+                    "imageUri": str(raiz)+"\imagenes\map.png",
+                    "accessibilityText": "None"
+                }
+            }
+            ],
+        "payload": {}
         }
 
 ######################################################################################

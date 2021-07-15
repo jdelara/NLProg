@@ -31,6 +31,7 @@ parameters_game = "(req, dngn, contexts_game)"
 contexts_conf = ["context 1", "context 2"]
 contexts_game = ["context 1", "context 2"]
 
+
 # RUTA DEL WEBHOOK DE CONFIGURACION
 @app.route('/webhook_conf', methods=['POST'])
 def webhook_conf():
