@@ -45,7 +45,7 @@ class Game:
         directions = ["north", "east", "west", "south"]
         dngn.rooms = [Room() for i in range(dngn.n_rooms)]        
         ceros_start = [idx for idx, element in enumerate(dngn.rooms[0].doors.values()) if element == 0]
-        doors = random.randint(1,4)
+        doors = random.randint(1,3)
         positions = random.sample(ceros_start, doors)        
         for pos in positions:
             dest_list = [idx for idx, element in enumerate(dngn.rooms) if element.doors[directions[3-pos]] == 0 and idx != 0]
@@ -56,9 +56,11 @@ class Game:
             dngn.rooms[dest].doors[directions[3-pos]] = 1
         for i in range(1,dngn.n_rooms):
             count = sum(map(lambda x : dngn.rooms[i].doors[x]==0, dngn.rooms[i].doors.keys()))
-            if count == 4:                
-                dir = random.randint(0,3)
-                dest_list = [idx for idx, element in enumerate(dngn.rooms) if element.doors[directions[3-dir]] == 0 and idx != i]               
+            if count == 4: 
+                dest_list = []            
+                while(not dest_list and self.check_rooms(dngn.rooms, i)):
+                    dir = random.randint(0,3)
+                    dest_list = [idx for idx, element in enumerate(dngn.rooms) if element.doors[directions[3-dir]] == 0 and idx != i and idx < i]                             
                 dest = random.choice(dest_list)+1 if dest_list else None           
                 if dest:                                     
                     dngn.rooms[i].doors[directions[dir]] = dest
@@ -100,12 +102,11 @@ class Game:
         for idx,r in enumerate(dngn.rooms):
             print(idx+1, list(r.doors.values()))
                         
-
-
-
-
-        
-
+    def check_rooms(self,rooms, idx):
+        for i in range(idx):
+            if sum(map(lambda x : rooms[i].doors[x]==0, rooms[i].doors.keys())) > 0:
+                return True
+        return False
 
     def build_characters(self, dngn):
         for c in dngn.characters:
@@ -188,6 +189,8 @@ class Game:
         sen += "\t\t - Type 'describe room' to get a description of the current room the player is in.\n"
         sen += "\t\t - Type 'check inventory' to take a look to the player's inventory.\n"
         sen += "\t\t - Type 'see map' to get a picture of the current visited rooms.\n"
+        sen += "\t\t - Type 'take note' to write something down in your notebook.\n"
+        sen += "\t\t - Type 'read notes' to take a look at your written notes.\n"
         return sen
     
     def button_telegram_fulfillmentMessages(self, text):
@@ -195,6 +198,7 @@ class Game:
                 {
                 "payload": {
                     "telegram": {
+                        "parse_mode": "Markdown",
                         "text": text,
                         "reply_markup": {
                             "keyboard": [

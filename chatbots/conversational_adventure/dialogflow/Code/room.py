@@ -1,14 +1,16 @@
-import pathlib
-import map_builder as mb
+"""import pathlib
+import map_builder as mb"""
+
 class Room:
     def __init__(self):        
         self.doors = {"north" : 0, "east": 0, "west": 0, "south": 0}
         self.characters = []
         self.items = []
         self.players = []
+        self.visited = False
 
 
-my_rooms = []
+"""my_rooms = []
 my_dict = {"north": 6, "west": 0, "east": 3, "south": 4}
 my_rooms.append(my_dict)
 my_dict = {"north": 0, "west": 0, "east": 6, "south": 0}
@@ -35,4 +37,4 @@ raiz = pathlib.Path(__file__).parent.parent.resolve()
 print(raiz)
 mb.map_builder_start(my_rooms)
 mb.print_map(my_rooms)
-mb.save_map(raiz)
+mb.save_map(raiz)"""

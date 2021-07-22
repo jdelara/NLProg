@@ -29,10 +29,10 @@ class Item:
         sen = "You can't open the " + self.name + ". You are missing "
         size = len(missing)
         for idx,item in enumerate(missing):
-            sen += "a " + item + "." if size == 1 else ""
-            sen += "a " + item + ", " if idx < size-1 and idx != size-2 else ""
-            sen += "a " + item + " " if idx == size-2 else ""                    
-            sen += "and a " + item + "." if size > 1 and idx == size-1 else ""
+            sen += "a " + item.name + "." if size == 1 else ""
+            sen += "a " + item.name + ", " if idx < size-1 and idx != size-2 else ""
+            sen += "a " + item.name + " " if idx == size-2 else ""                    
+            sen += "and a " + item.name + "." if size > 1 and idx == size-1 else ""
         return sen
          
 

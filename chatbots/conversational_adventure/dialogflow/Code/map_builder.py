@@ -1,7 +1,9 @@
+from conf_manager import character_name
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame as pg
 import pathlib
+import math
 
 def get_size(sizes):
     north = east = 0
@@ -10,27 +12,104 @@ def get_size(sizes):
         east = size["east"] if size["east"]>east else east
     return (north+1, east+1) 
 
-def draw_room(screen, position_x, position_y, size, room):
-    rect = pg.Rect(position_x, position_y, size, size)
-    #rect.center = (position,position)    
-    pg.draw.rect(screen, white, rect)
-    pg.draw.rect(screen, blue, rect, 2)   
+def get_map_name(name):
+    name = name.split()
+    return name[0][0].upper() + name[0][-1]
+
+def draw_character(screen, position_x, position_y, size, room, idx):
+    pg.font.init() 
+    row = round(math.sqrt(len(room.characters) + len(room.players) + len(room.items)))
+    print(len(room.characters) + len(room.players) + len(room.items))
+    print(position_x)
+    print(position_y)
+    print(size)
+    print("******************************")
+    if row > 0:
+        myfont = pg.font.SysFont('Arial', int((size/(row*row)-size/5)))
+        column = row
+        painted_x = 1
+        painted_y = 1
+        margen = size/(row*2)   
+
+        for character in room.characters:
+            textsurface = myfont.render(get_map_name(character.name), False, green)
+            rect = textsurface.get_rect()
+            position_x = position_x + margen * (painted_x*2-1)
+            position_y = position_y + margen * (painted_y*2-1)
+            print(position_x)
+            print(position_y)
+            rect.center = position_x, position_y
+            screen.blit(textsurface,rect)
+            pg.draw.rect(screen, blue, rect, -1)
+            #pg.draw.circle(screen, black, rect.center, int(size/(row*row)), 2)
+            if painted_x == row-1:
+                painted_x = 1
+                painted_y = painted_y + 1
+            else:
+                painted_x += 1
+            print("_____________________________")
+
+        for item in room.items:
+            textsurface = myfont.render(get_map_name(item.name), False, pink)
+            rect = textsurface.get_rect()
+            position_x = position_x + margen * (painted_x*2-1)
+            position_y = position_y + margen * (painted_y*2-1)
+            print(position_x)
+            print(position_y)
+            rect.center = position_x, position_y
+            screen.blit(textsurface,rect)
+            pg.draw.rect(screen, blue, rect, -1)
+            #pg.draw.circle(screen, black, rect.center, int(size/(row*row)), 2)
+            if painted_x == row-1:
+                painted_x = 1
+                painted_y = painted_y + 1
+            else:
+                painted_x += 1
+            print("_____________________________")
+
+        for player in room.players:
+            textsurface = myfont.render(get_map_name(player.name), False, blue)
+            rect = textsurface.get_rect()
+            position_x = position_x + margen * (painted_x*2-1)
+            position_y = position_y + margen * (painted_y*2-1)
+            print(position_x)
+            print(position_y)
+            rect.center = position_x, position_y
+            screen.blit(textsurface,rect)
+            pg.draw.rect(screen, blue, rect, -1)
+            #pg.draw.circle(screen, black, rect.center, int(size/(row*row)), 2)
+            if painted_x == row-1:
+                painted_x = 1
+                painted_y = painted_y + 1
+            else:
+                painted_x += 1
+            print("_____________________________")
+
+
+def draw_room(screen, position_x, position_y, size, room, idx):
+    rect = None
     # norte
-    if room["north"] > 0:
-        draw_corridor(screen, (position_x + size*2/5, position_y-size/2), (size/5, size/2))
-        pg.draw.line(screen, red, (position_x + size*2/5,position_y+3), (position_x + size*3/5,position_y+3), 5)
-    # sur
-    if room["south"] > 0:
-        draw_corridor(screen, (position_x + size*2/5, position_y+size), (size/5, size/2))
-        pg.draw.line(screen, red, (position_x + size*2/5,position_y+size-3), (position_x + size*3/5,position_y+size-3), 5)
-    # este
-    if room["east"] > 0:
-        draw_corridor(screen, (position_x+size,position_y + size*2/5), (size/2,size/5))
-        pg.draw.line(screen, red, (position_x+size-3,position_y + size*2/5), (position_x+size-3,position_y + size*3/5), 5) 
-    # oeste
-    if room["west"] > 0:
-        draw_corridor(screen, (position_x-size/2,position_y + size*2/5), (size/2,size/5))
-        pg.draw.line(screen, red, (position_x+3,position_y + size*2/5), (position_x+3,position_y + size*3/5), 5)  
+    if room.visited or not room.visited:
+        rect = pg.Rect(position_x, position_y, size, size)
+        #rect.center = (position,position)    
+        pg.draw.rect(screen, white, rect)
+        pg.draw.rect(screen, blue, rect, 2)  
+        draw_character(screen, position_x, position_y, size, room, idx)
+        if room.doors["north"] > 0:
+            draw_corridor(screen, (position_x + size*2/5, position_y-size/2), (size/5, size/2))
+            pg.draw.line(screen, red, (position_x + size*2/5,position_y+3), (position_x + size*3/5,position_y+3), 5)
+        # sur
+        if room.doors["south"] > 0:
+            draw_corridor(screen, (position_x + size*2/5, position_y+size), (size/5, size/2))
+            pg.draw.line(screen, red, (position_x + size*2/5,position_y+size-3), (position_x + size*3/5,position_y+size-3), 5)
+        # este
+        if room.doors["east"] > 0:
+            draw_corridor(screen, (position_x+size,position_y + size*2/5), (size/2,size/5))
+            pg.draw.line(screen, red, (position_x+size-3,position_y + size*2/5), (position_x+size-3,position_y + size*3/5), 5) 
+        # oeste
+        if room.doors["west"] > 0:
+            draw_corridor(screen, (position_x-size/2,position_y + size*2/5), (size/2,size/5))
+            pg.draw.line(screen, red, (position_x+3,position_y + size*2/5), (position_x+3,position_y + size*3/5), 5)  
     return rect
 
 def draw_corridor(screen, position, size):
@@ -90,16 +169,18 @@ def set_sizes(rooms):
         my_sizes.append(my_dict)
     return my_sizes
 
-def print_map(rooms):
+def print_map(rooms):    
+    i = 0
     for size,room in zip(sizes, rooms):
         position_x = max_sizes[1] - size["east"] - 1
         position_x = (base + base/2) * position_x + margen
         position_y = max_sizes[0] - size["south"] - 1
         position_y = (base + base/2) * position_y + margen
-        draw_room(screen, position_x, position_y, base, room)
+        draw_room(screen, position_x, position_y, base, room, i)
+        i += 1
     
-def save_map(raiz):
-    fname = str(raiz)+"\imagenes\map.png"
+def save_map(path):
+    fname = path
     pg.image.save(screen, fname)
 
 def map_builder_start(rooms):
@@ -108,7 +189,7 @@ def map_builder_start(rooms):
     height = 1000
     margen = 50
 
-    sizes = set_sizes(rooms)
+    sizes = set_sizes([room.doors for room in rooms])
     max_sizes = get_size(sizes)
 
     max_size = max(max_sizes)
@@ -123,6 +204,8 @@ blue = (0, 0, 255)
 grey = (179, 176, 176)
 red = (255, 0, 0)
 black = (0, 0, 0)
+green = (128,255,0)
+pink = (255,0,255)
 
 width = 0
 height = 0
@@ -137,25 +220,4 @@ height = 0
 width = 0
 
 screen = None
-
-
-
-"""raiz = pathlib.Path(__file__).parent.parent.resolve()
-
-white = (255, 255, 255)
-blue = (0, 0, 255)
-grey = (179, 176, 176)
-red = (255, 0, 0)
-black = (0, 0, 0)
-
-width = 1000
-height = 1000
-margen = 50
-
-sizes = get_size(set_sizes(rooms))
-
-max_size = max(sizes)
-base = (2*(width-2*margen))/(max_size*2+max_size-1)
-height = int((sizes[0]*base+(sizes[0]-1)*base/2) + 2*margen)
-width = int((sizes[1]*base+(sizes[1]-1)*base/2) + 2*margen)"""
 

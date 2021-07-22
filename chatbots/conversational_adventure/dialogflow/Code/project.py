@@ -25,7 +25,7 @@ if __name__ == "__main__":
 """
 
 dngn = Dungeon()
-dngn.aux()
+#dngn.aux()
 parameters_conf = "(req, dngn, contexts_conf)"
 parameters_game = "(req, dngn, contexts_game)"
 contexts_conf = ["context 1", "context 2"]

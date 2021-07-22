@@ -4,62 +4,6 @@ from character import Character
 from action import Action
 from item import Item
 import fallback
-
-
-
-def testing(req, dngn, contexts):
-    return {
-        "fulfillmentText": None,
-        "outputContexts": None,
-        "fulfillmentMessages": [
-            {
-            "payload": {
-                "telegram": {
-                    "text": "Here are the buttons",
-                    "reply_markup": {
-                        "keyboard": [
-                                [
-                                    {
-                                        "text": "Go north",
-                                        "request_contact": False,
-                                        "request_location": False
-                                    },
-                                    
-                                ],
-                                [
-                                    {
-                                        "text": "Go west",
-                                        "request_contact": False,
-                                        "request_location": False
-                                    },
-                                    {
-                                        "text": "Go east",
-                                        "request_contact": False,
-                                        "request_location": False
-                                    }
-                                ],
-                                [
-                                    {
-                                        "text": "Go south",
-                                        "request_contact": False,
-                                        "request_location": False
-                                    }
-                                ]
-                            ],
-                            "resize_keyboard": True,
-                            "one_time_keyboard": True,
-                            "selective": False
-                        }
-                    },
-                    "payloadMessage": None,
-                    "id": "sinId",
-                    "source": "TELEGRAM"
-                    }
-                }
-            ],
-        "payload": {}
-    }
-    
     
         
     
@@ -577,7 +521,7 @@ def inf_character(req, dngn, contexts):
 def inf_character_else_yes(req, dngn, contexts):  
     character = dngn.get_character()
     return {
-            "fulfillmentText":"Ok, what else will" + character.name + "tell you?", 
+            "fulfillmentText":"Ok, what else will" + character.name + " tell you?", 
             "outputContexts": [
                 {
                     "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/inf-character",
@@ -1252,7 +1196,8 @@ DUNGEON
 
 def end_configuration(req, dngn, contexts):
     missing_items = dngn.missing_items()
-    if not missing_items:
+    print(dngn.win_condition())
+    if not missing_items and dngn.win_condition():
         if(dngn.is_playable()): 
             dngn.set_items_inside()       
             return {
@@ -1274,12 +1219,22 @@ def end_configuration(req, dngn, contexts):
                     }
                 ],
             }
-    else:
+    elif missing_items:
         return {
                     "fulfillmentText":"You can't finish the dungeon because there are some items not created yet:\n\t\t-" + '\n\t\t- '.join(missing_items),
                     "outputContexts": [
                         {
-                            "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/dungeon-name",
+                            "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
+                            "lifespanCount": 1,
+                        }
+                    ],
+                }
+    else:
+        return {
+                    "fulfillmentText":"You can't finish the dungeon because there are no winning conditions created.",
+                    "outputContexts": [
+                        {
+                            "name": "projects/conf-chatbot-phqj/agent/sessions/af802176-92a2-ba51-7ed0-2632e0b95e77/contexts/player-selection",
                             "lifespanCount": 1,
                         }
                     ],
@@ -1290,7 +1245,7 @@ def dungeon_name(req, dngn, contexts):
     # COMPROBACION DE SI YA EXISTE
     dngn.name = name
     return {
-            "fulfillmentText":"'" + name + "' is now finished. " + dngn.dungeon_info(),            
+            "fulfillmentText":"'" + name + "' is now finished.\n\n" + dngn.dungeon_info(),            
         }   
     
 

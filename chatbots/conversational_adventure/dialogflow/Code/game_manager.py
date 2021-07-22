@@ -5,6 +5,8 @@ from action import Action
 from item import Item
 import map_builder as mb
 import pathlib
+import requests as rq
+
 
 import random
 
@@ -15,10 +17,11 @@ def default_welcome_intent_game(req, dngn, contexts):
     dngn.game.build_dungeon(dngn)
     for player in dngn.players:
         player.room = dngn.rooms[0]
-        dngn.rooms[0].players.append(player)  
+        dngn.rooms[0].players.append(player)
+    dngn.rooms[0].visited = True  
     key = dngn.characters[0].items[0]
-    dngn.players[dngn.game.turn].inventory.append(key)
-    mb.map_builder_start([room.doors for room in dngn.rooms])
+    #dngn.players[dngn.game.turn].inventory.append(key)
+    mb.map_builder_start(dngn.rooms)
     """for r in dngn.rooms:
         print(r.doors.values())
         if r.characters:
@@ -120,23 +123,24 @@ def describe_room(req, dngn, contexts):
             "payload":{}          
         }
 
-def see_map(req, dngn, contexts):
-    raiz = pathlib.Path(__file__).parent.parent.resolve()
-    mb.print_map([room.doors for room in dngn.rooms])
-    mb.save_map(raiz)
-    print(str(raiz))
+def see_map(req, dngn, contexts):  
+    
+    url = str(pathlib.Path(__file__).parent.parent.resolve())+"\imagenes\map.png"
+    mb.print_map(dngn.rooms)
+    mb.save_map(url)
+    print(str(url))
+    url = url.replace("/", "\\")
+    files = {'photo':open(url, 'rb')}
+    resp = rq.post('https://api.telegram.org/bot1846659871:AAG4ZUaZIdEYgTd2pRNu9yhMNRgaMgd_mn0/sendPhoto?chat_id=1799179541', files=files)
+    
     return {
         "fulfillmentText": None,
-        "outputContexts": None,
-        "fulfillmentMessages": [
-            {
-                "image": {
-                    "imageUri": str(raiz)+"\imagenes\map.png",
-                    "accessibilityText": "None"
-                }
-            }
-            ],
-        "payload": {}
+        "outputContexts": [
+                    {
+                        "name": "projects/game-chatbot-yauk/agent/sessions/410c82f8-1436-8d1b-0845-53acdefe9d30/contexts/player-action",
+                        "lifespanCount": 1,
+                    }
+                ],        
         }
 
 ######################################################################################
@@ -420,10 +424,10 @@ def consume_item(item, dngn):
     dngn.players[dngn.game.turn].inventory.remove(item) if item in dngn.items else None
     item.inside.actions["open"].item_in.remove(item) if item.inside else None
     item.inside = None
-    dngn.player[dngn.game.turn].health += item.actions["consume"].hp
-    if item.actions["consume"].win and dngn.player[dngn.game.turn].health > 0:
+    dngn.players[dngn.game.turn].health += item.actions["consume"].hp
+    if item.actions["consume"].win and dngn.players[dngn.game.turn].health > 0:
         return end_game()
-    if item.actions["consume"].lose or dngn.player[dngn.game.turn].health <= 0:
+    if item.actions["consume"].lose or dngn.players[dngn.game.turn].health <= 0:
         return game_over()
     else:
         dngn.change_turn()
@@ -487,12 +491,30 @@ def read_notes(req, dngn, contexts):
 
 def game_over():
     return {
-        "fulfillmentText":"GAME OVER",        
+        "fulfillmentText": None,
+        "outputContexts": None,
+        "fulfillmentMessages": [
+            {
+                "image": {
+                    "imageUri": "https://cdn.gamer-network.net/2020/articles/2020-05-29-11-37/five-of-the-best-game-over-screens-1590748640300.jpg/EG11/thumbnail/1920x1076/format/jpg/quality/80",
+                    "accessibilityText": "None"
+                }
+            },
+        ]        
     }
 
 def end_game():
     return {
-        "fulfillmentText":"CONGRATULATIONS, YOU HAVE COMPLETED THE DUNGEON",        
+        "fulfillmentText": None,
+        "outputContexts": None,
+        "fulfillmentMessages": [
+            {
+                "image": {
+                    "imageUri": "https://ak.picdn.net/shutterstock/videos/34233715/thumb/1.jpg",
+                    "accessibilityText": "None"
+                }
+            },
+        ]        
     }
 
 def help(req, dngn, contexts):

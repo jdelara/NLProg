@@ -49,6 +49,7 @@ class Dungeon:
     def set_player_room(self, idx):
         self.players[self.game.turn].room = self.rooms[idx-1]
         self.rooms[idx-1].players.append(self.players[self.game.turn])
+        self.rooms[idx-1].visited = True
     
     def remain_players(self):        
         return [player.name for player in self.players if not player.human_id]        
@@ -139,6 +140,15 @@ class Dungeon:
         for character in self.characters:
             missing_items.extend([i for i in character.items if not self.check_item_name(i)])
         return missing_items
+    
+    def win_condition(self):
+        for item in self.items:
+            try:
+                next(action for action in item.actions if item.actions[action].win)
+                return True
+            except:
+                pass
+        return False
                 
                    
 
@@ -150,7 +160,7 @@ class Dungeon:
         return id in players_id
     
     def describe_turn(self):
-        return "<b>Turn of " + self.players[self.game.turn].name + ".<b>\n\n" if len(self.players) > 1 else ""
+        return " *Turn of " + self.players[self.game.turn].name + ".* \n\n" if len(self.players) > 1 else ""
 
     # DUNGEON
     def dungeon_info(self):
@@ -204,6 +214,7 @@ class Dungeon:
         action2 = Action("You can consume the item", "It will kill the player", True)        
         item1.add_action("take", action1)
         item1.add_action("consume", action2)
+        item1.actions["consume"].hp = 50
         item1.inside = "chest"
         item2 = Item("chest")
         #action1 = Action("You can open the item", "", False, False, ["key", "bomb"], ["potion", "rock", "book", "lamp"])
