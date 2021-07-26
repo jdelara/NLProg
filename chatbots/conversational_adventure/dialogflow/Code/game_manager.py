@@ -124,14 +124,14 @@ def describe_room(req, dngn, contexts):
         }
 
 def see_map(req, dngn, contexts):  
-    
+    id = req["originalDetectIntentRequest"]["payload"]["data"]["chat"]["id"]
     url = str(pathlib.Path(__file__).parent.parent.resolve())+"\imagenes\map.png"
     mb.print_map(dngn.rooms)
     mb.save_map(url)
     print(str(url))
     url = url.replace("/", "\\")
     files = {'photo':open(url, 'rb')}
-    resp = rq.post('https://api.telegram.org/bot1846659871:AAG4ZUaZIdEYgTd2pRNu9yhMNRgaMgd_mn0/sendPhoto?chat_id=1799179541', files=files)
+    resp = rq.post('https://api.telegram.org/bot1846659871:AAG4ZUaZIdEYgTd2pRNu9yhMNRgaMgd_mn0/sendPhoto?chat_id='+id, files=files)
     
     return {
         "fulfillmentText": None,

@@ -4,6 +4,9 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame as pg
 import pathlib
 import math
+from item import Item
+from character import Character
+from player import Player
 
 def get_size(sizes):
     north = east = 0
@@ -16,74 +19,35 @@ def get_map_name(name):
     name = name.split()
     return name[0][0].upper() + name[0][-1]
 
-def draw_character(screen, position_x, position_y, size, room, idx):
-    pg.font.init() 
-    row = round(math.sqrt(len(room.characters) + len(room.players) + len(room.items)))
-    print(len(room.characters) + len(room.players) + len(room.items))
-    print(position_x)
-    print(position_y)
-    print(size)
-    print("******************************")
-    if row > 0:
-        myfont = pg.font.SysFont('Arial', int((size/(row*row)-size/5)))
-        column = row
+def draw_objects(screen, position_x, position_y, size, room, idx):
+    in_room = room.characters + room.players + room.items
+    if in_room:
+        pg.font.init()
+        row = math.ceil((math.sqrt(len(in_room))))
+        font_size = int((size/row)-(size/(row*row))) if len(in_room) > 1 else int(size-math.sqrt(size))
+        myfont = pg.font.SysFont('Arial', font_size)
+        margen = size/(row*2)
+        color = None
         painted_x = 1
         painted_y = 1
-        margen = size/(row*2)   
-
-        for character in room.characters:
-            textsurface = myfont.render(get_map_name(character.name), False, green)
+        for objct in in_room:
+            color = pink if type(objct) == Item else color
+            color = blue if type(objct) == Player else color
+            color = green if type(objct) == Character else color
+            textsurface = myfont.render(get_map_name(objct.name), False, color)
             rect = textsurface.get_rect()
-            position_x = position_x + margen * (painted_x*2-1)
-            position_y = position_y + margen * (painted_y*2-1)
-            print(position_x)
-            print(position_y)
-            rect.center = position_x, position_y
+            p_aux_x = position_x + margen * (painted_x*2-1)
+            p_aux_y = position_y + margen * (painted_y*2-1)            
+            rect.center = p_aux_x, p_aux_y
             screen.blit(textsurface,rect)
             pg.draw.rect(screen, blue, rect, -1)
-            #pg.draw.circle(screen, black, rect.center, int(size/(row*row)), 2)
-            if painted_x == row-1:
+            pg.draw.circle(screen, color, rect.center, int((size/(row*2))), 2)
+            if painted_x == row:
                 painted_x = 1
                 painted_y = painted_y + 1
             else:
                 painted_x += 1
-            print("_____________________________")
-
-        for item in room.items:
-            textsurface = myfont.render(get_map_name(item.name), False, pink)
-            rect = textsurface.get_rect()
-            position_x = position_x + margen * (painted_x*2-1)
-            position_y = position_y + margen * (painted_y*2-1)
-            print(position_x)
-            print(position_y)
-            rect.center = position_x, position_y
-            screen.blit(textsurface,rect)
-            pg.draw.rect(screen, blue, rect, -1)
-            #pg.draw.circle(screen, black, rect.center, int(size/(row*row)), 2)
-            if painted_x == row-1:
-                painted_x = 1
-                painted_y = painted_y + 1
-            else:
-                painted_x += 1
-            print("_____________________________")
-
-        for player in room.players:
-            textsurface = myfont.render(get_map_name(player.name), False, blue)
-            rect = textsurface.get_rect()
-            position_x = position_x + margen * (painted_x*2-1)
-            position_y = position_y + margen * (painted_y*2-1)
-            print(position_x)
-            print(position_y)
-            rect.center = position_x, position_y
-            screen.blit(textsurface,rect)
-            pg.draw.rect(screen, blue, rect, -1)
-            #pg.draw.circle(screen, black, rect.center, int(size/(row*row)), 2)
-            if painted_x == row-1:
-                painted_x = 1
-                painted_y = painted_y + 1
-            else:
-                painted_x += 1
-            print("_____________________________")
+    
 
 
 def draw_room(screen, position_x, position_y, size, room, idx):
@@ -94,7 +58,7 @@ def draw_room(screen, position_x, position_y, size, room, idx):
         #rect.center = (position,position)    
         pg.draw.rect(screen, white, rect)
         pg.draw.rect(screen, blue, rect, 2)  
-        draw_character(screen, position_x, position_y, size, room, idx)
+        draw_objects(screen, position_x, position_y, size, room, idx)
         if room.doors["north"] > 0:
             draw_corridor(screen, (position_x + size*2/5, position_y-size/2), (size/5, size/2))
             pg.draw.line(screen, red, (position_x + size*2/5,position_y+3), (position_x + size*3/5,position_y+3), 5)
