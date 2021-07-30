@@ -18,20 +18,8 @@ def default_welcome_intent_game(req, dngn, contexts):
     for player in dngn.players:
         player.room = dngn.rooms[0]
         dngn.rooms[0].players.append(player)
-    dngn.rooms[0].visited = True  
-    key = dngn.characters[0].items[0]
-    #dngn.players[dngn.game.turn].inventory.append(key)
-    mb.map_builder_start(dngn.rooms)
-    """for r in dngn.rooms:
-        print(r.doors.values())
-        if r.characters:
-            print("Characters")
-            for c in r.characters:
-                print(c.name)
-        if r.items:
-            print("Items")
-            for i in r.items:
-                print(i.name)"""
+    dngn.rooms[0].visited = True      
+    mb.map_builder_start(dngn.rooms)    
     return {
             "fulfillmentText":"Hello there!, I am the Game Manager. Choose a character to play as:" + dngn.print_remain_players(),            
             "outputContexts": [
@@ -131,8 +119,7 @@ def see_map(req, dngn, contexts):
     print(str(url))
     url = url.replace("/", "\\")
     files = {'photo':open(url, 'rb')}
-    resp = rq.post('https://api.telegram.org/bot1846659871:AAG4ZUaZIdEYgTd2pRNu9yhMNRgaMgd_mn0/sendPhoto?chat_id='+id, files=files)
-    
+    resp = rq.post('https://api.telegram.org/bot1846659871:AAG4ZUaZIdEYgTd2pRNu9yhMNRgaMgd_mn0/sendPhoto?chat_id='+id, files=files)    
     return {
         "fulfillmentText": None,
         "outputContexts": [

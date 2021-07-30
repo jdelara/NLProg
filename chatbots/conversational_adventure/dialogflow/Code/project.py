@@ -16,23 +16,26 @@ if __name__ == "__main__":
     app.run(host='0.0.0.0', port=80, debug=True)
 
 """
-
+ 
 
 
 
 
 
 """
-
+# ***************************************************************
+#   Inizialición de parámetros
+# ***************************************************************
 dngn = Dungeon()
-#dngn.aux()
 parameters_conf = "(req, dngn, contexts_conf)"
 parameters_game = "(req, dngn, contexts_game)"
 contexts_conf = ["context 1", "context 2"]
 contexts_game = ["context 1", "context 2"]
 
 
-# RUTA DEL WEBHOOK DE CONFIGURACION
+# ***************************************************************
+#   RUTA DEL WEBHOOK DE CONFIGURACION
+# *************************************************************** 
 @app.route('/webhook_conf', methods=['POST'])
 def webhook_conf():
     req = request.get_json(force=True)
@@ -40,7 +43,9 @@ def webhook_conf():
     func = req["queryResult"]["intent"]["displayName"].lower().replace("-", "_")
     return eval(func + parameters_conf)
 
-# RUTA DEL WEBHOOK DE JUEGO
+# ***************************************************************
+#   RUTA DEL WEBHOOK DE JUEGO
+# *************************************************************** 
 @app.route('/webhook_game', methods=['POST'])
 def webhook_game():
     req = request.get_json(force=True)
@@ -61,7 +66,10 @@ def webhook_game():
             ],         
         }      
 
-
+# ***************************************************************
+#   Función que guarda el contexto actual y el último utilizado
+#   a no ser que haya error.
+# *************************************************************** 
 def save_context(req, contexts):
     contexts[1] = contexts[0]
     try:
